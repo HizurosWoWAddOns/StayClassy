@@ -1,7 +1,7 @@
 ## Interface: 70000
 ## Title: Stay Classy
 ## Notes: Stay Classy - guild achievement helper
-## Notes-deDE: Stay Classy - Gildenerfolgshelfer
+## Author: Hizuro
 ## Version: @project-version@
 ## SavedVariables: StayClassyDB
 

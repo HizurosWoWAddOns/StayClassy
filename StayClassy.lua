@@ -66,7 +66,7 @@ local guildMembers,guildMembersByName,guildMembersNote,raceCustomPattern,guildMe
 
 local function notes2race(name,note,notesource)
 	for i=1, #achievementRaces do
-		if note:find(raceCustomPattern[achievementRaces[i]]) or note:find(achievementRaces[i]) then
+		if (raceCustomPattern[achievementRaces[i]] and note:find(raceCustomPattern[achievementRaces[i]])) or note:find(achievementRaces[i]) then
 			guildMembersNote[name] = {i,notesource}; -- for notifyWrongNotes
 			--if StayClassyToonDB[name]==nil and StayClassyToonDB[name]~=achievementRaces[i] then
 				StayClassyToonDB[name] = achievementRaces[i];

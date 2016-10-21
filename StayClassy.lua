@@ -9,7 +9,7 @@ local achievementRaces = faction=="Alliance" and {"HUMAN","NIGHTELF","GNOME","DW
 local _, aName, aPoints, aCompleted, aMonth, aDay, aYear, aDescription, aFlags, aIcon, aRewardText, aIsGuild, aWasEarnedByMe, aEarnedBy = 1,2,3,4,5,6,7,8,9,10,11,12,13,14; -- GetAchievementInfo
 local cString, cType, cCompleted, cQuantity, cReqQuantity, cCharName, cFlags, cAssetID, cQuantityString = 1,2,3,4,5,6,7,8,9; -- GetAchievementCriteriaInfo
 local classEN = setmetatable({},{__index=function(t,k) local v; for K,V in pairs(LOCALIZED_CLASS_NAMES_MALE)do if k==V then v=K; break; end end rawset(t,k,v); return v; end});
-local excluded,debug = {},false;
+local excluded,me = {},UnitName("player").."-"..Realm;
 local check = "|TInterface\\Buttons\\UI-CheckBox-Check:14:14:0:0:32:32:5:27:5:27|t";
 local spacer = "|TInterface\\Common\\SPACER:14:14:0:0:8:8:0:8:0:8|t";
 local icons = "|T%s:14:14:0:0:32:32:2:30:2:30|t";
@@ -55,9 +55,10 @@ local function sortLevelAndStanding(a,b)
 	return LaS:format(a[2],a[4])>LaS:format(b[2],b[4]);
 end
 
+local function debug() end
 if version=="@project-version@" then
-	function debug(event)
-		print(event,"(no guid)");
+	function debug(...)
+		print("debug",...);
 	end
 end
 
@@ -77,7 +78,10 @@ local function notes2race(name,note,notesource)
 end
 
 local function updateGuildMembers()
-	if not IsInGuild() or #guildMembers>0 then return end
+	if not IsInGuild() then return end
+	wipe(guildMembersNote);
+	wipe(guildMembersByName);
+	wipe(raceCustomPattern);
 	for i=1, #achievementRaces do
 		local key = "raceDetection"..achievementRaces[i];
 		if achievementRaces[i]=="PANDAREN" then
@@ -87,13 +91,13 @@ local function updateGuildMembers()
 			raceCustomPattern[achievementRaces[i]]=StayClassyDB[key];
 		end
 	end
-	local num = GetNumGuildMembers();
+	local tmp,num = {},GetNumGuildMembers();
 	for i=1, num do
 		local name,_,_,level,_,_,note,offnote,_,_,class,_,_,_,_,repStanding = GetGuildRosterInfo(i);
 		if not name:find("%-") then
 			name = name.."-"..Realm;
 		end
-		tinsert(guildMembers,{name,level,class,repStanding,note,offnote});
+		tinsert(tmp,{name,level,class,repStanding,note,offnote});
 		guildMembersByName[name] = #guildMembers;
 		if StayClassyDB.raceDetectionNotes and note:trim()~="" then
 			notes2race(name,note,1);
@@ -102,6 +106,7 @@ local function updateGuildMembers()
 			notes2race(name,offnote,2);
 		end
 	end
+	guildMembers = tmp;
 end
 
 local function GetGuildMembersByClass(class)
@@ -343,10 +348,7 @@ local function raceOption(order,rType,faction)
 		get = function() return StayClassyDB[key]; end,
 		set = function(_,v)
 			StayClassyDB[key] = v;
-			wipe(guildMembers);
-			wipe(guildMembersByName);
-			wipe(guildMembersNote);
-			wipe(raceCustomPattern);
+			updateGuildMembers();
 		end
 	};
 end
@@ -568,8 +570,10 @@ local function GetRaceByChatMsgGUID(self,event,...)
 			end
 		end
 	elseif debug and not excluded[event] then
-		excluded[event] = true;
-		debug(event);
+		if toon~="-"..Realm then
+			excluded[event] = true;
+		end
+		debug(event,"(no guid)");
 	end
 end
 
@@ -609,7 +613,7 @@ local frame,events = CreateFrame("frame"),{
 	PLAYER_ENTERING_WORLD = function(self,event,...)
 		if IsInGuild() then
 			local _,race = UnitRace("player");
-			StayClassyToonDB[UnitName("player").."-"..Realm] = race:upper();
+			StayClassyToonDB[me] = race:upper();
 		end
 		ticker = C_Timer.NewTicker(5,updateAchievements);
 		self:UnregisterEvent(event);
@@ -623,12 +627,6 @@ local frame,events = CreateFrame("frame"),{
 	PLAYER_GUILD_UPDATE = updateAchievements,
 	-- guild roster
 	GUILD_ROSTER_UPDATE = function(self,event,...)
-		local num = GetNumGuildMembers();
-		if guildMembersLocked or #guildMembers==num then return end
-		wipe(guildMembers);
-		wipe(guildMembersByName);
-		wipe(guildMembersNote);
-		wipe(raceCustomPattern);
 		updateGuildMembers();
 	end,
 	-- detect guild member races
@@ -643,7 +641,6 @@ local frame,events = CreateFrame("frame"),{
 	CHAT_MSG_GUILD_ITEM_LOOTED = GetRaceByChatMsgGUID,
 	CHAT_MSG_INSTANCE_CHAT = GetRaceByChatMsgGUID,
 	CHAT_MSG_INSTANCE_CHAT_LEADER = GetRaceByChatMsgGUID,
-	CHAT_MSG_LOOT = GetRaceByChatMsgGUID,
 	CHAT_MSG_OFFICER = GetRaceByChatMsgGUID,
 	CHAT_MSG_PARTY = GetRaceByChatMsgGUID,
 	CHAT_MSG_PARTY_LEADER = GetRaceByChatMsgGUID,

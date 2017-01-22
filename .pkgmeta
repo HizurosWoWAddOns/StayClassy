@@ -19,10 +19,10 @@ externals:
 	libs/LibColors-1.0:
 		url: git://git.curseforge.net/wow/libstringcoloring-1-0/mainline.git
 		tag: latest
-	lib/AceConfig-3.0:
+	libs/AceConfig-3.0:
 		url: svn://svn.wowace.com/wow/ace3/mainline/trunk/AceConfig-3.0
 		tag: latest
-	lib/AceGUI-3.0:
+	libs/AceGUI-3.0:
 		url: svn://svn.wowace.com/wow/ace3/mainline/trunk/AceGUI-3.0
 		tag: latest
 

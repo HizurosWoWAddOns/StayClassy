@@ -13,6 +13,7 @@ local excluded,me = {},UnitName("player").."-"..Realm;
 local check = "|TInterface\\Buttons\\UI-CheckBox-Check:14:14:0:0:32:32:5:27:5:27|t";
 local spacer = "|TInterface\\Common\\SPACER:14:14:0:0:8:8:0:8:0:8|t";
 local icons = "|T%s:14:14:0:0:32:32:2:30:2:30|t";
+local members = {}; -- options table
 
 local function print(...)
 	local colors,t,T,c = {"0088ff","00ff00","ff0000","44ffff","ffff00","ff8800","ff00ff","ffffff"},{},{...},1;
@@ -39,11 +40,15 @@ LC.colorset({
 	["sc_gray2"]	= "D0D0E0",
 });
 
-
 local classIndexByName = {};
 for i,v in ipairs(LFG_LIST_GROUP_DATA_CLASS_ORDER)do
 	classIndexByName[v]=i;
 	classIndexByName[LOCALIZED_CLASS_NAMES_MALE[v]]=i;
+end
+
+local raceValues = {};
+for i,v in ipairs(achievementRaces)do
+	raceValues[v] = L[v];
 end
 
 local function sortClasses(a,b)
@@ -62,19 +67,35 @@ if version=="@project-version@" then
 	end
 end
 
+
 --==[ guild member list ]==--
 local guildMembers,guildMembersByName,guildMembersNote,raceCustomPattern,guildMembersLocked = {},{},{},{},false;
 
 local function notes2race(name,note,notesource)
+	local F = "_FEMALE";
 	for i=1, #achievementRaces do
-		if (raceCustomPattern[achievementRaces[i]] and note:find(raceCustomPattern[achievementRaces[i]])) or note:find(achievementRaces[i]) then
+		if ((raceCustomPattern[achievementRaces[i]] and note:find(raceCustomPattern[achievementRaces[i]])) or note:find(achievementRaces[i]))
+		or ((raceCustomPattern[achievementRaces[i]..F] and note:find(raceCustomPattern[achievementRaces[i]..F])) or note:find(achievementRaces[i]..F)) then
 			guildMembersNote[name] = {i,notesource}; -- for notifyWrongNotes
-			--if StayClassyToonDB[name]==nil and StayClassyToonDB[name]~=achievementRaces[i] then
-				StayClassyToonDB[name] = achievementRaces[i];
-			--end
+			StayClassyToonDB[name] = achievementRaces[i];
 			break;
 		end
 	end
+end
+
+local function optionsRaceFunc(info,value)
+	local name = info[#info];
+	if value~=nil then
+		StayClassyToonDB[name] = value;
+	end
+	return StayClassyToonDB[name];
+end
+
+local function optionsHideKnown(info)
+	if StayClassyDB.hideMembersWithKnownRace and StayClassyToonDB[info[#info]]~=nil then
+		return true;
+	end
+	return false;
 end
 
 local function updateGuildMembers()
@@ -82,13 +103,19 @@ local function updateGuildMembers()
 	wipe(guildMembersNote);
 	wipe(guildMembersByName);
 	wipe(raceCustomPattern);
+	local optionMembersByClass = {};
 	for i=1, #achievementRaces do
 		local key = "raceDetection"..achievementRaces[i];
+		local keyF = key.."_FEMALE";
 		if achievementRaces[i]=="PANDAREN" then
 			key = key .. (faction=="Alliance" and 1 or 2);
+			keyF = keyF .. (faction=="Alliance" and 1 or 2);
 		end
 		if tostring(StayClassyDB[key]):trim()~="" then
 			raceCustomPattern[achievementRaces[i]]=StayClassyDB[key];
+		end
+		if tostring(StayClassyDB[keyF]):trim()~="" then
+			raceCustomPattern[achievementRaces[i].."_FEMALE"]=StayClassyDB[keyF];
 		end
 	end
 	local tmp,num = {},GetNumGuildMembers();
@@ -97,6 +124,14 @@ local function updateGuildMembers()
 		if not name:find("%-") then
 			name = name.."-"..Realm;
 		end
+		if optionMembersByClass[class]==nil then
+			optionMembersByClass[class] = {num=0,numUnknown=0,entries={}};
+		end
+		optionMembersByClass[class].num = optionMembersByClass[class].num+1;
+		if StayClassyToonDB[name]==nil then
+			optionMembersByClass[class].numUnknown = optionMembersByClass[class].numUnknown+1;
+		end
+		optionMembersByClass[class].entries[name] = {type="select", name=name, values=raceValues, get=optionsRaceFunc, set=optionsRaceFunc, hidden=optionsHideKnown };
 		tinsert(tmp,{name,level,class,repStanding,note,offnote});
 		guildMembersByName[name] = #guildMembers;
 		if StayClassyDB.raceDetectionNotes and note:trim()~="" then
@@ -105,6 +140,10 @@ local function updateGuildMembers()
 		if StayClassyDB.raceDetectionOfficer and offnote:trim()~="" then
 			notes2race(name,offnote,2);
 		end
+	end
+	for k,v in pairs(optionMembersByClass)do
+		members[k].name = C(k,LOCALIZED_CLASS_NAMES_MALE[k]).." ("..v.numUnknown.."/"..v.num..")";
+		members[k].args = v.entries;
 	end
 	guildMembers = tmp;
 end
@@ -340,37 +379,55 @@ local LDBIcon = LDB and LibStub("LibDBIcon-1.0", true) or false;
 
 
 --==[ Option panel ]==--
+local function raceOptionFunc(info,value)
+	local key = info[#info];
+	if value~=nil then
+		StayClassyDB[key] = value;
+		updateGuildMembers();
+	end
+	return StayClassyDB[key];
+end
+
 local function raceOption(order,rType,faction)
 	local key = "raceDetection"..rType..(faction~=nil and faction or "");
 	return {
-		type = "input", order = order,
-		name = rType,
-		get = function() return StayClassyDB[key]; end,
-		set = function(_,v)
-			StayClassyDB[key] = v;
-			updateGuildMembers();
-		end
+		type="group", order=order, inline=true, name=L[rType],
+		args={
+			[key] = {type="input", order=1, name=MALE, get=raceOptionFunc, set=raceOptionFunc},
+			[key.."_FEMALE"] = {type="input", order=2, name=FEMALE, get=raceOptionFunc, set=raceOptionFunc}
+		}
 	};
+end
+
+local function optionsFunc(info,value)
+	local key = info[#info];
+	if key == "minimap" then
+		if value~=nil then
+			StayClassyDB.minimap.hide = not value;
+			if value then
+				LDBIcon:Hide(addon);
+			else
+				LDBIcon:Show(addon);
+			end
+		end
+		return not StayClassyDB.minimap.hide;
+	else
+		if value~=nil then
+			StayClassyDB[key] = value;
+		end
+		return StayClassyDB[key];
+	end
 end
 
 local options = {
 	type = "group",
 	name = addon,
+	childGroups = "tab",
 	args = {
 		minimap = {
 			type = "toggle", width = "full", order = 1,
 			name = L["Show minimap icon"],
-			get = function() return not StayClassyDB.minimap.hide; end,
-			set = function(_,v)
-				StayClassyDB.minimap.hide = not v;
-				if LDBIcon then
-					if v then
-						LDBIcon:Show(addon);
-					else
-						LDBIcon:Hide(addon);
-					end
-				end
-			end
+			get = optionsFunc, set = optionsFunc
 		},
 		section1 = {
 			type = "group", order = 2,
@@ -380,29 +437,25 @@ local options = {
 					type = "group", order = 1, guiInline = true,
 					name = L["Achievement overview"],
 					args = {
-						showCompleted = {
+						expandCompleted = {
 							type = "toggle", width = "full", order = 1,
 							name = L["Expand completed achievements"],
-							get = function() return StayClassyDB.expandCompleted; end,
-							set = function(_,v) StayClassyDB.expandCompleted = v; end
+							get = optionsFunc, set = optionsFunc
 						},
 						showCompletedCriteria = {
 							type = "toggle", width = "full", order = 2,
 							name = L["Show completed criteria"],
-							get = function() return StayClassyDB.showCompletedCriteria; end,
-							set = function(_,v) StayClassyDB.showCompletedCriteria = v; end
+							get = optionsFunc, set = optionsFunc
 						},
 						showRequirements = {
 							type = "toggle", width = "full", order = 3,
 							name = L["Show achievement requirements"],
-							get = function() return StayClassyDB.showRequirements; end,
-							set = function(_,v) StayClassyDB.showRequirements = v; end
+							get = optionsFunc, set = optionsFunc
 						},
 						showCandidates = {
 							type = "toggle", width = "full", order = 4,
 							name = L["Show candidates counter"],
-							get = function() return StayClassyDB.showCandidates; end,
-							set = function(_,v) StayClassyDB.showCandidates = v; end
+							get = optionsFunc, set = optionsFunc
 						}
 					}
 				},
@@ -413,8 +466,7 @@ local options = {
 						showToonUnknownRace = {
 							type = "toggle", width = "full", order = 1,
 							name = L["Show candidates with unknown races"],
-							get = function() return StayClassyDB.showToonUnknownRace; end,
-							set = function(_,v) StayClassyDB.showToonUnknownRace = v; end
+							get = optionsFunc, set = optionsFunc
 						}
 					}
 				}
@@ -429,28 +481,26 @@ local options = {
 					type = "description", order = 0,
 					name = L["This addon detecting the races of guild members through chat messages. Optionally, the races can also be recognized by reading the guild notes. For this, it is necessary to define the recognition characteristic manually."]
 				},
-				notes = {
+				raceDetectionNotes = {
 					type = "toggle", width = "full", order = 1,
 					name = L["Scan note"],
-					get = function() return StayClassyDB.raceDetectionNotes; end,
-					set = function(_,v) StayClassyDB.raceDetectionNotes = v; end
+					get = optionsFunc, set = optionsFunc
 				},
-				officer = {
+				raceDetectionOfficer = {
 					type = "toggle", width = "full", order = 2,
 					name = L["Scan officer note"],
-					get = function() return StayClassyDB.raceDetectionOfficer; end,
-					set = function(_,v) StayClassyDB.raceDetectionOfficer = v; end
+					get = optionsFunc, set = optionsFunc
 				},
 				notifyWrongNotes = {
 					type = "toggle", width = "full", order = 3,
 					name = L["Notify wrong notes and/or officer notes"],
 					desc = L["Print notification about wrong notes and/or officer notes in chat frame"],
-					get = function() return StayClassyDB.notifyWrongNotes; end,
-					set = function(_,v) StayClassyDB.notifyWrongNotes = v; end
+					get = optionsFunc, set = optionsFunc
 				},
 				races_alliance = {
 					type = "group", order = 4,
 					name = FACTION_ALLIANCE,
+					childGroups = "tab",
 					args = {
 						HUMAN    = raceOption(1,"HUMAN"),
 						NIGHTELF = raceOption(2,"NIGHTELF"),
@@ -465,6 +515,7 @@ local options = {
 				races_horde = {
 					type = "group", order = 4,
 					name = FACTION_HORDE,
+					childGroups = "tab",
 					args = {
 						ORC      = raceOption(1,"ORC"),
 						TAUREN   = raceOption(2,"TAUREN"),
@@ -480,7 +531,6 @@ local options = {
 					type = "group", order = 5,
 					name = L["Notifications"],
 					args = {
-						--info = { type = "description", order = 0, name = "" },
 						no_data = {
 							type = "description", order = 1,
 							name = L["Currently there are no notifications collected..."]
@@ -488,9 +538,28 @@ local options = {
 					}
 				}
 			}
+		},
+		section4 = {
+			type = "group", order = 5,
+			name = L["Manually race editing"],
+			childGroups = "tree",
+			args = {
+				hideMembersWithKnownRace = {
+					type = "toggle", order = 0, width = "full",
+					name = L["Hide members with known race"],
+					get = optionsFunc, set = optionsFunc
+				}
+			}
 		}
 	}
 };
+
+-- generate classes lists
+for i,v in ipairs(CLASS_SORT_ORDER)do
+	local label = C(v,LOCALIZED_CLASS_NAMES_MALE[v]);
+	options.args.section4.args[v] = { type="group", order=i+1, name=label, args={} };
+	members[v] = options.args.section4.args[v];
+end
 
 local notifiedNames = {};
 local function addNotification(name)
@@ -596,7 +665,8 @@ local frame,events = CreateFrame("frame"),{
 				showToonUnknownRace = false,
 				raceDetectionNotes = false,
 				raceDetectionOfficer = false,
-				notifyWrongNotes = false
+				notifyWrongNotes = false,
+				hideMembersWithKnownRace = true
 			})do
 				if StayClassyDB[i]==nil then
 					StayClassyDB[i] = v;

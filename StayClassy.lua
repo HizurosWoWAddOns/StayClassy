@@ -404,11 +404,7 @@ local function optionsFunc(info,value)
 	if key == "minimap" then
 		if value~=nil then
 			StayClassyDB.minimap.hide = not value;
-			if value then
-				LDBIcon:Hide(addon);
-			else
-				LDBIcon:Show(addon);
-			end
+			LDBIcon:Refresh(addon);
 		end
 		return not StayClassyDB.minimap.hide;
 	else

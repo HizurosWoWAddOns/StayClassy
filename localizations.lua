@@ -3,54 +3,29 @@ local addon, ns = ...;
 local L = setmetatable({},{__index=function(t,k) local v=tostring(k); rawset(t,k,v); return v; end});
 ns.L = L;
 
---[[
-L["Achievement overview"] = "";
-L["Author"] = "";
-L["Candidates check list"] = "";
-L["Currently there are no notifications collected..."] = "";
-L["Different races found: Over chat message = %s, in guild member %s = %s."] = "";
-L["Expand completed achievements"] = "";
-L["No candidates found..."] = "";
-L["Notifications"] = "";
-L["Notify wrong notes and/or officer notes"] = "";
-L["Oops... Collecting data."] = "";
-L["Print notification about wrong notes and/or officer notes in chat frame"] = "";
-L["Race detection"] = "";
-L["Scan note"] = "";
-L["Scan officer note"] = "";
-L["Show achievement requirements"] = "";
-L["Show candidates counter"] = "";
-L["Show candidates with unknown races"] = "";
-L["Show completed criteria"] = "";
-L["Show minimap icon"] = "";
-L["This addon detecting the races of guild members through chat messages. Optionally, the races can also be recognized by reading the guild notes. For this, it is necessary to define the recognition characteristic manually."] = "";
-L["Tooltip options"] = "";
-L["Unknown races"] = "";
---]]
+-- Hi. This addon needs your help for localization. :)
+-- https://wow.curseforge.com/projects/stayclassy/localization
 
 if LOCALE_deDE then
-	L["Achievement overview"] = "Erfolgsübersicht";
-	L["Author"] = "Autor";
-	L["Candidates check list"] = "Kandidatencheckliste";
-	L["Currently there are no notifications collected..."] = "Zur Zeit keine Benachrichtigungen gesammelt...";
-	L["Different races found: Over chat message = %s, in guild member %s = %s."] = "Unterschiedliche Rassen gefunden: Über Chatnachricht = %s, in Gildenmitglied %s = %s";
-	L["Expand completed achievements"] = "Erweiter abgeschlossene Erfolge";
-	L["No candidates found..."] = "Keine Kandidaten gefunden...";
-	L["Notifications"] = "Benachrichtigungen";
-	L["Notify wrong notes and/or officer notes"] = "Melde falsche Notizen und/oder Offiziersnotizen";
-	L["Oops... Collecting data."] = "Oops.. Sammle noch Daten.";
-	L["Print notification about wrong notes and/or officer notes in chat frame"] = "Zeige Benachrichtigungen über falsche Notizen und/oder Offiziersnotizen im Chatfenster";
-	L["Race detection"] = "Rassenerkennung";
-	L["Scan note"] = "Scanne Notiz";
-	L["Scan officer note"] = "Scanne Offiziersnotiz";
-	L["Show achievement requirements"] = "Zeige Erfolgsanforderungen";
-	L["Show candidates counter"] = "Zeige Kandidatenzähler";
-	L["Show candidates with unknown races"] = "Zeige Kandidaten mit unbekannte Rassen";
-	L["Show completed criteria"] = "Zeige abgeschlossene Kriterien";
-	L["Show minimap icon"] = "Zeige Minikartensymbol";
-	L["This addon detecting the races of guild members through chat messages. Optionally, the races can also be recognized by reading the guild notes. For this, it is necessary to define the recognition characteristic manually."] = "Dieses Addon erkennt die Rassen von Gildenmitgliedern durch Chat-Nachrichten. Optional kann die Rassen auch durch lesen der Gildennotizen erkannt werden. Dazu ist es erforderlich, das Erkennungsmerkmal manuell zu definieren.";
-	L["Tooltip options"] = "Tooltip Optionen";
-	L["Unknown races"] = "Unbekannte Rassen";
+	--@localization(locale="deDE", format="lua_additive_table", handle-subnamespaces="none", handle-unlocalized="ignore")@
+elseif LOCALE_esES then
+	--@localization(locale="esES", format="lua_additive_table", handle-subnamespaces="none", handle-unlocalized="ignore")@
+elseif LOCALE_esMX then
+	--@localization(locale="esMX", format="lua_additive_table", handle-subnamespaces="none", handle-unlocalized="ignore")@
+elseif LOCALE_frFR then
+	--@localization(locale="frFR", format="lua_additive_table", handle-subnamespaces="none", handle-unlocalized="ignore")@
+elseif LOCALE_itIT then
+	--@localization(locale="itIT", format="lua_additive_table", handle-subnamespaces="none", handle-unlocalized="ignore")@
+elseif LOCALE_koKR then
+	--@localization(locale="koKR", format="lua_additive_table", handle-subnamespaces="none", handle-unlocalized="ignore")@
+elseif LOCALE_ptBR then
+	--@localization(locale="ptBR", format="lua_additive_table", handle-subnamespaces="none", handle-unlocalized="ignore")@
+elseif LOCALE_ruRU then
+	--@localization(locale="ruRU", format="lua_additive_table", handle-subnamespaces="none", handle-unlocalized="ignore")@
+elseif LOCALE_zhCN then
+	--@localization(locale="zhCN", format="lua_additive_table", handle-subnamespaces="none", handle-unlocalized="ignore")@
+elseif LOCALE_zhTW then
+	--@localization(locale="zhTW", format="lua_additive_table", handle-subnamespaces="none", handle-unlocalized="ignore")@
 end
 
 -- races

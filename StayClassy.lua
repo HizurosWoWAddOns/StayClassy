@@ -356,6 +356,7 @@ end
 
 --==[ LibDataBroker & Minimap icon ]==--
 local LDB = LibStub("LibDataBroker-1.1"):NewDataObject(addon,{
+	type    = "data source",
 	icon	= "Interface\\Icons\\Achievement_general_stayclassy",
 	label	= addon,
 	text	= addon,

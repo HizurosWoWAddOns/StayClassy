@@ -60,9 +60,8 @@ local function sortLevelAndStanding(a,b)
 	return LaS:format(a[2],a[4])>LaS:format(b[2],b[4]);
 end
 
-local function debug() end
-if version=="@project-version@" then
-	function debug(...)
+local function debug(...)
+	if version=="@".."project-version".."@" then
 		print("debug",...);
 	end
 end

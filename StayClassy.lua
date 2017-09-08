@@ -239,11 +239,11 @@ local function tooltip2OnEnter(self)
 	end
 
 	if c==0 then
-		tt2:SetCell(tt2:AddLine(),1,C("sc_gray1",L["No candidates found..."]),nil,"CENTER",0);
+		tt2:SetCell(tt2:AddLine(),1,C("sc_gray1",L["NoCandidates"]),nil,"CENTER",0);
 	end
 
 	if StayClassyDB.showToonUnknownRace and #b>0 then
-		tt2:SetCell(tt2:AddLine(),1,C("sc_gray1",L["Unknown races"]),nil,"LEFT",0);
+		tt2:SetCell(tt2:AddLine(),1,C("sc_gray1",L["UnknownRaces"]),nil,"LEFT",0);
 		table.sort(b,sortLevelAndStanding);
 		for i,v in pairs(b)do
 			local name,realm = strsplit("-",v[1]);
@@ -287,10 +287,11 @@ local function tooltipOnEnter(self)
 	if not data[achievements.meta] then
 		tt:SetCell(tt:AddLine(),1,C("sc_header",addon),"LEFT",0);
 		tt:AddSeparator(4,0,0,0,0);
-		tt:SetCell(tt:AddLine(),1,C("sc_gray2",L["Oops... Collecting data."]),nil,"CENTER",0);
+		tt:SetCell(tt:AddLine(),1,C("sc_gray2",L["CollectData"]),nil,"CENTER",0);
 	else
 		local stayClassyLocale = "";
 		if not (LOCALE_enUS or LOCALE_enGB) then
+			-- adds localized name of achievement behind the addon name for non english user
 			stayClassyLocale = " - "..C(data[achievements.meta][aCompleted] and "green" or "mage",data[achievements.meta][aName]);
 		end
 		local l = tt:SetCell(tt:AddLine(),1,C("sc_header",addon)..stayClassyLocale,tt:GetHeaderFont(),"LEFT",0);
@@ -431,46 +432,46 @@ local options = {
 	args = {
 		minimap = {
 			type = "toggle", width = "full", order = 1,
-			name = L["Show minimap icon"],
+			name = L["OptMinimap"], desc = nil -- L["OptMinimapDesc"]
 			get = optionsFunc, set = optionsFunc
 		},
 		section1 = {
 			type = "group", order = 2,
-			name = L["Tooltip options"],
+			name = L["OptTabTT"],
 			args = {
 				overview = {
 					type = "group", order = 1, guiInline = true,
-					name = L["Achievement overview"],
+					name = L["OptHeadAOV"],
 					args = {
 						expandCompleted = {
 							type = "toggle", width = "full", order = 1,
-							name = L["Expand completed achievements"],
+							name = L["OptExpand"], desc = nil -- L["OptExpandDesc"],
 							get = optionsFunc, set = optionsFunc
 						},
 						showCompletedCriteria = {
 							type = "toggle", width = "full", order = 2,
-							name = L["Show completed criteria"],
+							name = L["OptShowCompleted"], desc = nil -- L["OptShowCompletedDesc"],
 							get = optionsFunc, set = optionsFunc
 						},
 						showRequirements = {
 							type = "toggle", width = "full", order = 3,
-							name = L["Show achievement requirements"],
+							name = L["OptRequire"], desc = nil -- L["OptRequireDesc"],
 							get = optionsFunc, set = optionsFunc
 						},
 						showCandidates = {
 							type = "toggle", width = "full", order = 4,
-							name = L["Show candidates counter"],
+							name = L["OptShowCount"], desc = nil -- L["OptShowCountDesc"],
 							get = optionsFunc, set = optionsFunc
 						}
 					}
 				},
 				checklist = {
 					type = "group", order = 2, guiInline = true,
-					name = L["Candidates check list"],
+					name = L["OptHeadCCL"],
 					args = {
 						showToonUnknownRace = {
 							type = "toggle", width = "full", order = 1,
-							name = L["Show candidates with unknown races"],
+							name = L["OptShowUnknown"], desc = nil --  L["OptShowUnknownDesc"],
 							get = optionsFunc, set = optionsFunc
 						}
 					}
@@ -479,27 +480,26 @@ local options = {
 		},
 		section3 = {
 			type = "group", order = 4,
-			name = L["Race detection"],
+			name = L["OptTabRT"],
 			childGroups = "tab",
 			args = {
 				desc = {
 					type = "description", order = 0,
-					name = L["This addon detecting the races of guild members through chat messages. Optionally, the races can also be recognized by reading the guild notes. For this, it is necessary to define the recognition characteristic manually."]
+					name = L["OptRTDesc"]
 				},
 				raceDetectionNotes = {
 					type = "toggle", width = "full", order = 1,
-					name = L["Scan note"],
+					name = L["OptScanNote"], desc = nil -- L["OptScanNoteDesc"]
 					get = optionsFunc, set = optionsFunc
 				},
 				raceDetectionOfficer = {
 					type = "toggle", width = "full", order = 2,
-					name = L["Scan officer note"],
+					name = L["OptScanOffNote"], desc = nil -- L["OptScanOffNoteDesc"]
 					get = optionsFunc, set = optionsFunc
 				},
 				notifyWrongNotes = {
 					type = "toggle", width = "full", order = 3,
-					name = L["Notify wrong notes and/or officer notes"],
-					desc = L["Print notification about wrong notes and/or officer notes in chat frame"],
+					name = L["OptNotifyWrong"], desc = L["OptNotidyWrongDesc"]
 					get = optionsFunc, set = optionsFunc
 				},
 				races_alliance = {
@@ -534,11 +534,11 @@ local options = {
 				},
 				notifications = {
 					type = "group", order = 5,
-					name = L["Notifications"],
+					name = L["OptTabNotifications"],
 					args = {
 						no_data = {
 							type = "description", order = 1,
-							name = L["Currently there are no notifications collected..."]
+							name = L["OptNoNotifications"]
 						}
 					}
 				}
@@ -546,12 +546,12 @@ local options = {
 		},
 		section4 = {
 			type = "group", order = 5,
-			name = L["Manually race editing"],
+			name = L["OptTabMRT"],
 			childGroups = "tree",
 			args = {
 				hideMembersWithKnownRace = {
 					type = "toggle", order = 0, width = "full",
-					name = L["Hide members with known race"],
+					name = L["OptHideKnown"]
 					get = optionsFunc, set = optionsFunc
 				}
 			}
@@ -570,7 +570,7 @@ local notifiedNames = {};
 local function addNotification(name)
 	if notifiedNames[name]~=nil then return end
 	notifiedNames[name] = true;
-	local msg = L["Different races found: Over chat message = %s, in guild member %s = %s."]:format(
+	local msg = L["OptNotifyMsg"]:format(
 		StayClassyToonDB[name],
 		guildMembersNote[name][2]==1 and LABEL_NOTE or OFFICER_NOTE_COLON,
 		achievementRaces[guildMembersNote[name][1]]

@@ -364,28 +364,32 @@ end
 
 
 --==[ LibDataBroker & Minimap icon ]==--
-local LDB = LibStub("LibDataBroker-1.1"):NewDataObject(addon,{
-	type    = "data source",
-	icon	= "Interface\\Icons\\Achievement_general_stayclassy",
-	label	= addon,
-	text	= addon,
-	OnEnter = tooltipOnEnter,
-	OnLeave = tooltipOnLeave,
-	OnClick = function(_, button)
-		if (button=="LeftButton") then
-			openAchievement(achievements.meta);
-		else
-			local Lib = LibStub("AceConfigDialog-3.0");
-			if Lib.OpenFrames[addon]~=nil then
-				Lib:Close(addon);
+local function RegisterDataBroker()
+	LDB = LibStub("LibDataBroker-1.1");
+	LDBIcon = LibStub("LibDBIcon-1.0");
+	LDBObject = LibStub("LibDataBroker-1.1"):NewDataObject(addon,{
+		type    = "data source",
+		icon	= "Interface\\Icons\\Achievement_general_stayclassy",
+		label	= addon,
+		text	= addon,
+		OnEnter = tooltipOnEnter,
+		OnLeave = tooltipOnLeave,
+		OnClick = function(_, button)
+			if (button=="LeftButton") then
+				openAchievement(achievements.meta);
 			else
-				Lib:Open(addon);
-				Lib.OpenFrames[addon]:SetStatusText(("%s: %s, %s: %s"):format(GAME_VERSION_LABEL,version,L["Author"],author));
+				local Lib = LibStub("AceConfigDialog-3.0");
+				if Lib.OpenFrames[addon]~=nil then
+					Lib:Close(addon);
+				else
+					Lib:Open(addon);
+					Lib.OpenFrames[addon]:SetStatusText(("%s: %s, %s: %s"):format(GAME_VERSION_LABEL,version,L["Author"],author));
+				end
 			end
 		end
-	end
-});
-local LDBIcon = LDB and LibStub("LibDBIcon-1.0", true) or false;
+	});
+	LDBIcon:Register(addon, LDBObject, StayClassyDB.minimap);
+end
 
 
 --==[ Option panel ]==--
@@ -401,10 +405,11 @@ end
 local function raceOption(order,rType,faction)
 	local key = "raceDetection"..rType..(faction~=nil and faction or "");
 	return {
-		type="group", order=order, inline=true, name=L[rType],
+		type="group", order=order, inline=true, name="",
 		args={
-			[key] = {type="input", order=1, name=MALE, get=raceOptionFunc, set=raceOptionFunc},
-			[key.."_FEMALE"] = {type="input", order=2, name=FEMALE, get=raceOptionFunc, set=raceOptionFunc}
+			[key.."_Label"] = {type="description",name=C("dkyellow",L[rType]),width="normal", fontSize="medium", order=0},
+			[key] = {type="input", order=1, name=MALE},
+			[key.."_FEMALE"] = {type="input", order=2, name=FEMALE}
 		}
 	};
 end
@@ -429,50 +434,46 @@ local options = {
 	type = "group",
 	name = addon,
 	childGroups = "tab",
+	get = optionsFunc,
+	set = optionsFunc,
 	args = {
 		minimap = {
-			type = "toggle", width = "full", order = 1,
+			type = "toggle", width = "double", order = 1,
 			name = L["OptMinimap"], desc = nil -- L["OptMinimapDesc"]
-			get = optionsFunc, set = optionsFunc
 		},
 		section1 = {
 			type = "group", order = 2,
 			name = L["OptTabTT"],
 			args = {
 				overview = {
-					type = "group", order = 1, guiInline = true,
+					type = "group", order = 1, inline = true,
 					name = L["OptHeadAOV"],
 					args = {
 						expandCompleted = {
 							type = "toggle", width = "full", order = 1,
 							name = L["OptExpand"], desc = nil -- L["OptExpandDesc"],
-							get = optionsFunc, set = optionsFunc
 						},
 						showCompletedCriteria = {
 							type = "toggle", width = "full", order = 2,
 							name = L["OptShowCompleted"], desc = nil -- L["OptShowCompletedDesc"],
-							get = optionsFunc, set = optionsFunc
 						},
 						showRequirements = {
 							type = "toggle", width = "full", order = 3,
 							name = L["OptRequire"], desc = nil -- L["OptRequireDesc"],
-							get = optionsFunc, set = optionsFunc
 						},
 						showCandidates = {
 							type = "toggle", width = "full", order = 4,
 							name = L["OptShowCount"], desc = nil -- L["OptShowCountDesc"],
-							get = optionsFunc, set = optionsFunc
 						}
 					}
 				},
 				checklist = {
-					type = "group", order = 2, guiInline = true,
+					type = "group", order = 2, inline = true,
 					name = L["OptHeadCCL"],
 					args = {
 						showToonUnknownRace = {
 							type = "toggle", width = "full", order = 1,
 							name = L["OptShowUnknown"], desc = nil --  L["OptShowUnknownDesc"],
-							get = optionsFunc, set = optionsFunc
 						}
 					}
 				}
@@ -484,28 +485,27 @@ local options = {
 			childGroups = "tab",
 			args = {
 				desc = {
-					type = "description", order = 0,
+					type = "description", order = 0, fontSize = "medium",
 					name = L["OptRTDesc"]
 				},
 				raceDetectionNotes = {
-					type = "toggle", width = "full", order = 1,
+					type = "toggle", order = 1,
 					name = L["OptScanNote"], desc = nil -- L["OptScanNoteDesc"]
-					get = optionsFunc, set = optionsFunc
 				},
 				raceDetectionOfficer = {
-					type = "toggle", width = "full", order = 2,
+					type = "toggle", order = 2,
 					name = L["OptScanOffNote"], desc = nil -- L["OptScanOffNoteDesc"]
-					get = optionsFunc, set = optionsFunc
 				},
 				notifyWrongNotes = {
-					type = "toggle", width = "full", order = 3,
+					type = "toggle", order = 3,
 					name = L["OptNotifyWrong"], desc = L["OptNotidyWrongDesc"]
-					get = optionsFunc, set = optionsFunc
 				},
 				races_alliance = {
 					type = "group", order = 4,
 					name = FACTION_ALLIANCE,
 					childGroups = "tab",
+					get=raceOptionFunc,
+					set=raceOptionFunc,
 					args = {
 						HUMAN    = raceOption(1,"HUMAN"),
 						NIGHTELF = raceOption(2,"NIGHTELF"),
@@ -521,6 +521,8 @@ local options = {
 					type = "group", order = 4,
 					name = FACTION_HORDE,
 					childGroups = "tab",
+					get=raceOptionFunc,
+					set=raceOptionFunc,
 					args = {
 						ORC      = raceOption(1,"ORC"),
 						TAUREN   = raceOption(2,"TAUREN"),
@@ -552,7 +554,6 @@ local options = {
 				hideMembersWithKnownRace = {
 					type = "toggle", order = 0, width = "full",
 					name = L["OptHideKnown"]
-					get = optionsFunc, set = optionsFunc
 				}
 			}
 		}
@@ -677,9 +678,7 @@ local frame,events = CreateFrame("frame"),{
 					StayClassyDB[i] = v;
 				end
 			end
-			if LDBIcon then
-				LDBIcon:Register(addon, LDB, StayClassyDB.minimap);
-			end
+			RegisterDataBroker();
 			RegisterOptionPanel();
 			self:UnregisterEvent(event);
 		end

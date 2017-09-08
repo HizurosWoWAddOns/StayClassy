@@ -13,7 +13,9 @@ local excluded,me = {},UnitName("player").."-"..Realm;
 local check = "|TInterface\\Buttons\\UI-CheckBox-Check:14:14:0:0:32:32:5:27:5:27|t";
 local spacer = "|TInterface\\Common\\SPACER:14:14:0:0:8:8:0:8:0:8|t";
 local icons = "|T%s:14:14:0:0:32:32:2:30:2:30|t";
-local members = {}; -- options table
+local LR = LibStub("LibRaces-1.0");
+local LDB,LDBObject,LDBIcon
+local members = {};
 
 local function print(...)
 	local colors,t,T,c = {"0088ff","00ff00","ff0000","44ffff","ffff00","ff8800","ff00ff","ffffff"},{},{...},1;
@@ -29,6 +31,13 @@ local function print(...)
 	end
 	_G.print(unpack(t));
 end
+
+local function debug(...)
+	if version=="@".."project-version".."@" then
+		print("debug",...);
+	end
+end
+
 
 --==[ LibColors ]==--
 local LC = LibStub("LibColors-1.0");
@@ -60,24 +69,24 @@ local function sortLevelAndStanding(a,b)
 	return LaS:format(a[2],a[4])>LaS:format(b[2],b[4]);
 end
 
-local function debug(...)
-	if version=="@".."project-version".."@" then
-		print("debug",...);
-	end
-end
-
 
 --==[ guild member list ]==--
 local guildMembers,guildMembersByName,guildMembersNote,raceCustomPattern,guildMembersLocked = {},{},{},{},false;
 
 local function notes2race(name,note,notesource)
-	local F = "_FEMALE";
-	for i=1, #achievementRaces do
-		if ((raceCustomPattern[achievementRaces[i]] and note:find(raceCustomPattern[achievementRaces[i]])) or note:find(achievementRaces[i]))
-		or ((raceCustomPattern[achievementRaces[i]..F] and note:find(raceCustomPattern[achievementRaces[i]..F])) or note:find(achievementRaces[i]..F)) then
-			guildMembersNote[name] = {i,notesource}; -- for notifyWrongNotes
-			StayClassyToonDB[name] = achievementRaces[i];
-			break;
+	local race,raceEng = LR:FindRaceNameInText(note);
+	if race then
+		guildMembersNote[name] = {i,notesource}; -- for notifyWrongNotes
+		StayClassyToonDB[name] = raceEng:upper();
+	else
+		local F = "_FEMALE";
+		for i=1, #achievementRaces do
+			if ((raceCustomPattern[achievementRaces[i]] and note:find(raceCustomPattern[achievementRaces[i]])) or note:find(achievementRaces[i]))
+			or ((raceCustomPattern[achievementRaces[i]..F] and note:find(raceCustomPattern[achievementRaces[i]..F])) or note:find(achievementRaces[i]..F)) then
+				guildMembersNote[name] = {i,notesource}; -- for notifyWrongNotes
+				StayClassyToonDB[name] = achievementRaces[i];
+				break;
+			end
 		end
 	end
 end

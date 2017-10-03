@@ -3,13 +3,13 @@ StayClassyDB,StayClassyToonDB = {},{};
 local addon, ns, _ = ...;
 local L,version,author = ns.L,GetAddOnMetadata(addon,"Version"),GetAddOnMetadata(addon,"Author");
 local faction,Faction = UnitFactionGroup("player");
-local Realm = GetRealmName():gsub(" ","");
+local Realm = GetRealmName():gsub(" ",""):gsub("%-",""):gsub("'","");
 local data,achievements = {},faction=="Alliance" and {meta=5152,5151,5153,5154,5155,5156,5157,6624} or {meta=5158,5160,5161,5162,5164,5163,5165,6625};
-local achievementRaces = faction=="Alliance" and {"HUMAN","NIGHTELF","GNOME","DWARF","DRAENEI","WORGEN","PANDAREN"} or {"ORC","TAUREN","TROLL","SCOURGE","BLOODELF","GOBLIN","PANDAREN"};
+local achievementRaces = faction=="Alliance" and {"HUMAN","NIGHTELF","GNOME","DWARF","DRAENEI","WORGEN","PANDAREN"} or {"ORC","TAUREN","TROLL","UNDEAD","BLOODELF","GOBLIN","PANDAREN"};
 local _, aName, aPoints, aCompleted, aMonth, aDay, aYear, aDescription, aFlags, aIcon, aRewardText, aIsGuild, aWasEarnedByMe, aEarnedBy = 1,2,3,4,5,6,7,8,9,10,11,12,13,14; -- GetAchievementInfo
 local cString, cType, cCompleted, cQuantity, cReqQuantity, cCharName, cFlags, cAssetID, cQuantityString = 1,2,3,4,5,6,7,8,9; -- GetAchievementCriteriaInfo
 local classEN = setmetatable({},{__index=function(t,k) local v; for K,V in pairs(LOCALIZED_CLASS_NAMES_MALE)do if k==V then v=K; break; end end rawset(t,k,v); return v; end});
-local excluded,me = {},UnitName("player").."-"..Realm;
+local excluded,me,guildMembersLast = {},UnitName("player").."-"..Realm,0;
 local check = "|TInterface\\Buttons\\UI-CheckBox-Check:14:14:0:0:32:32:5:27:5:27|t";
 local spacer = "|TInterface\\Common\\SPACER:14:14:0:0:8:8:0:8:0:8|t";
 local icons = "|T%s:14:14:0:0:32:32:2:30:2:30|t";
@@ -17,7 +17,7 @@ local LR = LibStub("LibRaces-1.0");
 local LDB,LDBObject,LDBIcon
 local members = {};
 
-local function print(...)
+function ns.print(...)
 	local colors,t,T,c = {"0088ff","00ff00","ff0000","44ffff","ffff00","ff8800","ff00ff","ffffff"},{},{...},1;
 	tinsert(T,1,ns.L[addon]..":");
 	for i=1, #T do
@@ -29,12 +29,13 @@ local function print(...)
 			c = c<#colors and c+1 or 1;
 		end
 	end
-	_G.print(unpack(t));
+	print(unpack(t));
 end
 
-local function debug(...)
-	if version=="@".."project-version".."@" then
-		print("debug",...);
+local debugMode = (version=="@".."project-version".."@");
+function ns.debug(...)
+	if debugMode then
+		ns.print("debug",...);
 	end
 end
 
@@ -71,20 +72,23 @@ end
 
 
 --==[ guild member list ]==--
-local guildMembers,guildMembersByName,guildMembersNote,raceCustomPattern,guildMembersLocked = {},{},{},{},false;
+local guildMembers,guildMembersNote,raceCustomPattern,added,guildMembersLocked = {},{},{},{},false;
 
 local function notes2race(name,note,notesource)
 	local race,raceEng = LR:FindRaceNameInText(note);
 	if race then
-		guildMembersNote[name] = {i,notesource}; -- for notifyWrongNotes
+		guildMembersNote[name].found = raceEng:upper(); -- for notifyWrongNotes
+		guildMembersNote[name].foundSource = notesource;
 		StayClassyToonDB[name] = raceEng:upper();
 	else
 		local F = "_FEMALE";
 		for i=1, #achievementRaces do
-			if ((raceCustomPattern[achievementRaces[i]] and note:find(raceCustomPattern[achievementRaces[i]])) or note:find(achievementRaces[i]))
-			or ((raceCustomPattern[achievementRaces[i]..F] and note:find(raceCustomPattern[achievementRaces[i]..F])) or note:find(achievementRaces[i]..F)) then
-				guildMembersNote[name] = {i,notesource}; -- for notifyWrongNotes
-				StayClassyToonDB[name] = achievementRaces[i];
+			local race = achievementRaces[i];
+			if ((raceCustomPattern[race] and note:find(raceCustomPattern[race])) or note:find(race))
+			or ((raceCustomPattern[race..F] and note:find(raceCustomPattern[race..F])) or note:find(race..F)) then
+				guildMembersNote[name].found = race;  -- for notifyWrongNotes
+				guildMembersNote[name].foundSource = notesource;
+				StayClassyToonDB[name] = race;
 				break;
 			end
 		end
@@ -108,25 +112,13 @@ end
 
 local function updateGuildMembers()
 	if not IsInGuild() then return end
-	wipe(guildMembersNote);
-	wipe(guildMembersByName);
-	wipe(raceCustomPattern);
-	local optionMembersByClass = {};
-	for i=1, #achievementRaces do
-		local key = "raceDetection"..achievementRaces[i];
-		local keyF = key.."_FEMALE";
-		if achievementRaces[i]=="PANDAREN" then
-			key = key .. (faction=="Alliance" and 1 or 2);
-			keyF = keyF .. (faction=="Alliance" and 1 or 2);
-		end
-		if tostring(StayClassyDB[key]):trim()~="" then
-			raceCustomPattern[achievementRaces[i]]=StayClassyDB[key];
-		end
-		if tostring(StayClassyDB[keyF]):trim()~="" then
-			raceCustomPattern[achievementRaces[i].."_FEMALE"]=StayClassyDB[keyF];
-		end
+	local now = time();
+	if guildMembersLast>now then
+		return;
 	end
-	local tmp,num = {},GetNumGuildMembers();
+	-- check guild members
+	local optionMembersByClass = {};
+	local tmp,changed,num = {},false,GetNumGuildMembers();
 	for i=1, num do
 		local name,_,_,level,_,_,note,offnote,_,_,class,_,_,_,_,repStanding = GetGuildRosterInfo(i);
 		if not name:find("%-") then
@@ -140,26 +132,34 @@ local function updateGuildMembers()
 			optionMembersByClass[class].numUnknown = optionMembersByClass[class].numUnknown+1;
 		end
 		optionMembersByClass[class].entries[name] = {type="select", name=name, values=raceValues, get=optionsRaceFunc, set=optionsRaceFunc, hidden=optionsHideKnown };
-		tinsert(tmp,{name,level,class,repStanding,note,offnote});
-		guildMembersByName[name] = #guildMembers;
-		if StayClassyDB.raceDetectionNotes and note:trim()~="" then
+		note,offnote = note:trim(),offnote:trim();
+		if guildMembersNote[name]==nil then
+			guildMembersNote[name]={};
+		end
+		if StayClassyDB.raceDetectionNotes and note~="" and guildMembersNote[name].note~=note then
+			guildMembersNote[name].note=note;
 			notes2race(name,note,1);
 		end
-		if StayClassyDB.raceDetectionOfficer and offnote:trim()~="" then
+		if StayClassyDB.raceDetectionOfficer and offnote~="" and guildMembersNote[name].offnote~=offnote then
+			guildMembersNote[name].offnote = offnote;
 			notes2race(name,offnote,2);
 		end
+		tinsert(tmp,{name,level,class,repStanding,note,offnote});
 	end
+	guildMembers = tmp;
+	guildMembersLast=now+5; -- +5sec
 	for k,v in pairs(optionMembersByClass)do
 		members[k].name = C(k,LOCALIZED_CLASS_NAMES_MALE[k]).." ("..v.numUnknown.."/"..v.num..")";
 		members[k].args = v.entries;
 	end
-	guildMembers = tmp;
 end
 
 local function GetGuildMembersByClass(class)
 	if not IsInGuild() then return {}; end
 	guildMembersLocked = true;
-	updateGuildMembers();
+	if #guildMembers==0 then
+		updateGuildMembers();
+	end
 	local withRace,withoutRace = {},{};
 	for i=1, #guildMembers do
 		if guildMembers[i][3]==class then
@@ -172,15 +172,6 @@ local function GetGuildMembersByClass(class)
 	end
 	guildMembersLocked = false;
 	return withRace,withoutRace;
-end
-
-local function ToonIsInMyGuild(name)
-	if not IsInGuild() then return false; end
-	guildMembersLocked = true;
-	updateGuildMembers();
-	local bool = not not guildMembersByName[name];
-	guildMembersLocked = false;
-	return bool;
 end
 
 
@@ -437,8 +428,12 @@ local options = {
 	get = optionsFunc,
 	set = optionsFunc,
 	args = {
-		minimap = {
+		loadedMsg = {
 			type = "toggle", width = "double", order = 1,
+			name = L["OptLoadedMsg"], desc = nil -- L["OptLoadedMsgDesc"]
+		},
+		minimap = {
+			type = "toggle", width = "double", order = 2,
 			name = L["OptMinimap"], desc = nil -- L["OptMinimapDesc"]
 		},
 		section1 = {
@@ -527,7 +522,7 @@ local options = {
 						ORC      = raceOption(1,"ORC"),
 						TAUREN   = raceOption(2,"TAUREN"),
 						TROLL    = raceOption(3,"TROLL"),
-						SCOURGE  = raceOption(4,"SCOURGE"),
+						UNDEAD   = raceOption(4,"UNDEAD"),
 						BLOODELF = raceOption(5,"BLOODELF"),
 						GOBLIN   = raceOption(6,"GOBLIN"),
 						PANDAREN = raceOption(7,"PANDAREN",2),
@@ -572,9 +567,9 @@ local function addNotification(name)
 	if notifiedNames[name]~=nil then return end
 	notifiedNames[name] = true;
 	local msg = L["OptNotifyMsg"]:format(
-		StayClassyToonDB[name],
-		guildMembersNote[name][2]==1 and LABEL_NOTE or OFFICER_NOTE_COLON,
-		achievementRaces[guildMembersNote[name][1]]
+		L[StayClassyToonDB[name]],
+		guildMembersNote[name].foundSource==1 and LABEL_NOTE or OFFICER_NOTE_COLON,
+		L[guildMembersNote[name].found]
 	);
 	options.args.section3.args.notifications.args.no_data.hidden=true;
 	options.args.section3.args.notifications.args['notification'..name] = {
@@ -589,7 +584,7 @@ local function addNotification(name)
 		}
 	}
 	if StayClassyDB.notifyWrongNotes then
-		print(name,"\n",msg);
+		ns.print(name,"\n",msg);
 	end
 end
 
@@ -634,13 +629,15 @@ end
 local function GetRaceByChatMsgGUID(self,event,...)
 	if not IsInGuild() then return end
 	if achievements.meta and data[achievements.meta] and data[achievements.meta][aCompleted] then return end
-	local _,toon,_,_,_,_,_,_,_,_,_,guid = ...;
-	if not toon:find("%-") then toon = toon.."-"..Realm; end
+	local _,_,_,_,_,_,_,_,_,_,_,guid = ...;
 	if tostring(guid):find("^Player%-%d+%-") then
-		if ToonIsInMyGuild(toon) then
-			local _, _, _, race = GetPlayerInfoByGUID(guid);
-			StayClassyToonDB[toon] = race:upper();
-			if guildMembersNote[toon] and achievementRaces[guildMembersNote[toon][1]]~=StayClassyToonDB[toon] then
+		local className,classId,raceName,race,gender,toon = GetPlayerInfoByGUID(guid);
+		if not toon:find("%-") then toon = toon.."-"..Realm; end
+		if IsGuildMember(toon) then
+			race = race:upper();
+			if race=="SCOURGE" then race = "UNDEAD" end
+			StayClassyToonDB[toon] = race;
+			if guildMembersNote[toon] and guildMembersNote[toon].found~=StayClassyToonDB[toon] then
 				addNotification(toon);
 			end
 		end
@@ -663,6 +660,7 @@ local frame,events = CreateFrame("frame"),{
 			end
 			for i,v in pairs({
 				minimap = {hide=false},
+				loadedMsg = true,
 				--toonrace = {},
 				expandCompleted = false,
 				showCompletedCriteria = false,
@@ -678,8 +676,45 @@ local frame,events = CreateFrame("frame"),{
 					StayClassyDB[i] = v;
 				end
 			end
+			-- little internal migration
+			if not StayClassyDB.migrateUNDEAD then
+				for k,v in pairs(StayClassyToonDB)do
+					if v=="SCOURGE" then
+						StayClassyToonDB[k] = "UNDEAD";
+					end
+				end
+				if StayClassyDB.raceDetectionSCOURGE~=nil then
+					StayClassyDB.raceDetectionUNDEAD=StayClassyDB.raceDetectionSCOURGE;
+					StayClassyDB.raceDetectionSCOURGE=nil;
+				end
+				if StayClassyDB.raceDetectionSCOURGE_FEMALE~=nil then
+					StayClassyDB.raceDetectionUNDEAD_FEMALE=StayClassyDB.raceDetectionSCOURGE_FEMALE;
+					StayClassyDB.raceDetectionSCOURGE_FEMALE=nil;
+				end
+				StayClassyDB.migrateUNDEAD=true;
+			end
+			--
 			RegisterDataBroker();
 			RegisterOptionPanel();
+			--
+			for i=1, #achievementRaces do
+				local key = "raceDetection"..achievementRaces[i];
+				local keyF = key.."_FEMALE";
+				if achievementRaces[i]=="PANDAREN" then
+					key = key .. (faction=="Alliance" and 1 or 2);
+					keyF = keyF .. (faction=="Alliance" and 1 or 2);
+				end
+				if tostring(StayClassyDB[key]):trim()~="" then
+					raceCustomPattern[achievementRaces[i]]=StayClassyDB[key];
+				end
+				if tostring(StayClassyDB[keyF]):trim()~="" then
+					raceCustomPattern[achievementRaces[i].."_FEMALE"]=StayClassyDB[keyF];
+				end
+			end
+			--
+			if StayClassyDB.loadedMsg then
+				ns.print(L.AddOnLoaded);
+			end
 			self:UnregisterEvent(event);
 		end
 	end,

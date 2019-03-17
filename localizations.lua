@@ -9,91 +9,78 @@ ns.L = L;
 -- english localization
 
 --@do-not-package@
-L["OptMinimap"] = "Show minimap icon"
-L["OptLoadedMsg"] = "Show 'AddOn loaded'"
-L["OptTabTT"] = "Tooltip options"
-L["OptHeadAOV"] = "Achievement overview"
-L["OptExpand"] = "Expand completed achievements"
-L["OptShowCompleted"] = "Show completed criteria"
-L["OptRequire"] = "Show achievement requirements"
-L["OptShowCount"] = "Show candidates counter"
-L["OptHeadCCL"] = "Candidates check list"
-L["OptShowUnknown"] = "Show candidates with unknown races"
-
-L["OptTabRT"] = "Race detection"
-L["OptRTDesc"] = "This addon can detecting the races of guild members through chat messages. Optionally, the races can also be recognized by reading the guild notes. For this, it is necessary to define the recognition characteristic manually."
-L["OptScanNote"] = "Scan note"
-L["OptScanOffNote"] = "Scan officer note"
-L["OptNotifyWrong"] = "Notify wrong notes"
-L["OptNotidyWrongDesc"] = "Print notification about wrong notes and/or officer notes in chat frame"
-L["OptTabNotifications"] = "Notifications"
-L["OptNoNotifications"] = "Currently there are no notifications collected..."
-
-L["OptTabMRT"] = "Manually race editing"
-L["OptHideKnown"] = "Hide members with known race"
-L["OptNotifyMsg"] = "Different races found: Over chat message = %s, in guild member %s = %s.";
-
-L["UnknownRaces"] = "Unknown races";
-L["NoCandidates"] = "No candidates found..."
-L["CollectData"] = "Oops... Collecting data."
-L["Author"] = "Author"
 
 L["AddOnLoaded"] = "AddOn loaded..."
-
---[[ old localization lines
-L["Candidates"] = "Candidates check list"
-L["Currently there are no notifications collected..."] = "Currently there are no notifications collected..."
-L["Different races found: Over chat message = %s, in guild member %s = %s."] = "Different races found: Over chat message = %s, in guild member %s = %s."
-L["Expand completed achievements"] = "Expand completed achievements"
-L["No candidates found..."] = "No candidates found..."
-L["Notifications"] = "Notifications"
-L["Notify wrong notes and/or officer notes"] = "Notify wrong notes and/or officer notes"
-L["Oops... Collecting data."] = "Oops... Collecting data."
-L["Print notification about wrong notes and/or officer notes in chat frame"] = "Print notification about wrong notes and/or officer notes in chat frame"
-L["Race detection"] = "Race detection"
-L["Scan note"] = "Scan note"
-L["Scan officer note"] = "Scan officer note"
-L["Show achievement requirements"] = "Show achievement requirements"
-L["Show candidates counter"] = "Show candidates counter"
-L["Show candidates with unknown races"] = "Show candidates with unknown races"
-L["Show completed criteria"] = "Show completed criteria"
-L["Show minimap icon"] = "Show minimap icon"
-L["This addon detecting the races of guild members through chat messages. Optionally, the races can also be recognized by reading the guild notes. For this, it is necessary to define the recognition characteristic manually."] = "This addon detecting the races of guild members through chat messages. Optionally, the races can also be recognized by reading the guild notes. For this, it is necessary to define the recognition characteristic manually."
-L["Tooltip options"] = "Tooltip options"
-L["Unknown races"] = "Unknown races"
-L["AddOnLoaded"] = "AddOn gelanden..."
---]]
+L["Author"] = "Author"
+L["CollectData"] = "Oops... Collecting data."
+L["Days"] = "Days";
+L["Hours"] = "Hours";
+L["Months"] = "Months";
+L["NoCandidates"] = "No candidates found..."
+L["OptExpand"] = "Expand completed achievements"
+L["OptExpandDesc"] = "Display completed achievements in tooltip"
+L["OptHeadAOV"] = "Achievement overview"
+L["OptHeadCCL"] = "Candidates check list"
+L["OptInact"] = "Inactive members"
+L["OptInactDesc"] = "With the following options you can set an offline time limit or select a rank for inactive members. All members of this rank or offline limit will be ignored in cadidates counter from main tooltip and list separate in sub tooltip."
+L["OptInactHide"] = "Hide inactive"
+L["OptInactRank"] = "Inactive by rank"
+L["OptInactRankDesc"] = "Select a rank to exclude inactive member."
+L["OptInactTimeNum"] = "Offline time limit"
+L["OptInactTimeType"] = "Inactive by offline time limit"
+L["OptLoadedMsgDesc"] = "Display 'AddOn loaded...' message in chat window on startup";
+L["OptMinimap"] = "Minimap button"
+L["OptMinimapDesc"] = "Display own button for this addon on minimap"
+L["OptRequire"] = "Show achievement requirements"
+L["OptRequireDesc"] = "Display required level and guild reputation for individual archievements."
+L["OptShowCompleted"] = "Completed criteria"
+L["OptShowCompletedDesc"] = "Display completed criteria for individual achievements."
+L["OptShowCount"] = "Candidates counter"
+L["OptShowCountDesc"] = "Display the number of guild members with known race behind the criteria that can complete it."
+L["OptShowUnknown"] = "Candidates without detected races"
+L["OptShowUnknownDesc"] = "Display guild members without detected race in candidates tooltip";
+L["OptTabTT"] = "Tooltip options"
+L["UnknownRaces"] = "Unknown races";
+L["Years"] = "Years";
 --@end-do-not-package@
 --@localization(locale="enUS", format="lua_additive_table", handle-subnamespaces="none", handle-unlocalized="ignore")@
 -- /end english localization
 
 if LOCALE_deDE then
 --@do-not-package@
+L["AddOnLoaded"] = "AddOn geladen..."
 L["Author"] = "Autor"
 L["CollectData"] = "Oops.. Sammle noch Daten."
+L["Days"] = "Tage"
+L["Hours"] = "Stunden"
+L["Months"] = "Monate"
 L["NoCandidates"] = "Keine Kandidaten gefunden..."
 L["OptExpand"] = "Erweiter abgeschlossene Erfolge"
+L["OptExpandDesc"] = "Zeige abgeschloßene Erfolge im Tooltip"
 L["OptHeadAOV"] = "Erfolgsübersicht"
 L["OptHeadCCL"] = "Kandidatencheckliste"
-L["OptHideKnown"] = "Verstecke Mitglieder mit bekannter Rasse"
-L["OptMinimap"] = "Zeige Minikartensymbol"
-L["OptLoadedMsg"] = "Zeige 'AddOn geladen'"
-L["OptNoNotifications"] = "Zur Zeit keine Benachrichtigungen gesammelt..."
-L["OptNotidyWrongDesc"] = "Zeige Benachrichtigungen über falsche Notizen und/oder Offiziersnotizen im Chatfenster"
-L["OptNotifyMsg"] = "Unterschiedliche Rassen gefunden: Über Chatnachricht = %s, in Gildenmitglied %s = %s"
-L["OptNotifyWrong"] = "Melde falsche Notizen"
+L["OptInact"] = "Inaktive Mitglieder"
+L["OptInactDesc"] = "Mit den folgenden Optionen kannst du ein Zeitlimit für Offlinezeit setzen oder einen Rang für inaktive Mitglieder auswählen. Alle Mitglieder dieses Ranges oder Offline Limits werden ignoriert im Kandidatenzähler vom Haupttooltip und separat im Untertooltip aufgelistet."
+L["OptInactHide"] = "Verstecke Inaktive"
+L["OptInactRank"] = "Inaktiv durch Rang"
+L["OptInactRankDesc"] = "Wähle einen Rang um inaktive Mitglieder auszuschließen"
+L["OptInactTimeNum"] = "Offline Zeitlimit"
+L["OptInactTimeType"] = "Inaktiv durch Offline Zeitlimit"
+L["OptLoadedMsgDesc"] = "Zeige die 'AddOn geladen...' Nachricht im Chatfenster an Anfang"
+L["OptMinimap"] = "Minikartensymbol"
+L["OptMinimapDesc"] = "Zeige einen eigenen Knopf für dieses AddOn an der Minikarte an"
 L["OptRequire"] = "Zeige Erfolgsanforderungen"
-L["OptRTDesc"] = "Dieses Addon erkennt die Rassen von Gildenmitgliedern durch Chat-Nachrichten. Optional kann die Rassen auch durch lesen der Gildennotizen erkannt werden. Dazu ist es erforderlich, das Erkennungsmerkmal manuell zu definieren."
-L["OptScanNote"] = "Scanne Notiz"
-L["OptScanOffNote"] = "Scanne Offiziersnotiz"
-L["OptShowCompleted"] = "Zeige abgeschlossene Kriterien"
-L["OptShowCount"] = "Zeige Kandidatenzähler"
-L["OptShowUnknown"] = "Zeige Kandidaten mit unbekannte Rassen"
-L["OptTabMRT"] = "Rasse manuell bearbeiten"
-L["OptTabNotifications"] = "Benachrichtigungen"
-L["OptTabRT"] = "Rassenerkennung"
+L["OptRequireDesc"] = "Zeige erforderliche Stufe und Gildenruf für einzelne Erfolge"
+L["OptShowCompleted"] = "Abgeschlossene Kriterien"
+L["OptShowCompletedDesc"] = "Zeige vervollständigte Kriterien für einzelne Erfolge."
+L["OptShowCount"] = "Kandidatenzähler"
+L["OptShowCountDesc"] = "Zeige die Anzahl Gildenmitglieder mit bekannter Rasse hinter dem Kriterium, die es vervollständigen können."
+L["OptShowUnknown"] = "Kandidaten ohne erkannte Rasse"
+L["OptShowUnknownDesc"] = "Zeige Gildenmitglieder ohne erkannte Rasse im Kandidaten-Tooltip"
 L["OptTabTT"] = "Tooltip Optionen"
 L["UnknownRaces"] = "Unbekannte Rassen"
+L["Years"] = "Jahre"
+
 --@end-do-not-package@
 --@localization(locale="deDE", format="lua_additive_table", handle-subnamespaces="none", handle-unlocalized="ignore")@
 elseif LOCALE_esES then

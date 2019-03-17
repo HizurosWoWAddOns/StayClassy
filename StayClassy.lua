@@ -1,44 +1,54 @@
 
 StayClassyDB,StayClassyToonDB = {},{};
 local addon, ns, _ = ...;
-local L,version,author = ns.L,GetAddOnMetadata(addon,"Version"),GetAddOnMetadata(addon,"Author");
+local L,author = ns.L,GetAddOnMetadata(addon,"Author");
 local faction,Faction = UnitFactionGroup("player");
-local Realm = GetRealmName():gsub(" ",""):gsub("%-",""):gsub("'","");
 local data,achievements = {},faction=="Alliance" and {meta=5152,5151,5153,5154,5155,5156,5157,6624} or {meta=5158,5160,5161,5162,5164,5163,5165,6625};
 local achievementRaces = faction=="Alliance" and {"HUMAN","NIGHTELF","GNOME","DWARF","DRAENEI","WORGEN","PANDAREN"} or {"ORC","TAUREN","TROLL","UNDEAD","BLOODELF","GOBLIN","PANDAREN"};
 local _, aName, aPoints, aCompleted, aMonth, aDay, aYear, aDescription, aFlags, aIcon, aRewardText, aIsGuild, aWasEarnedByMe, aEarnedBy = 1,2,3,4,5,6,7,8,9,10,11,12,13,14; -- GetAchievementInfo
 local cString, cType, cCompleted, cQuantity, cReqQuantity, cCharName, cFlags, cAssetID, cQuantityString = 1,2,3,4,5,6,7,8,9; -- GetAchievementCriteriaInfo
 local classEN = setmetatable({},{__index=function(t,k) local v; for K,V in pairs(LOCALIZED_CLASS_NAMES_MALE)do if k==V then v=K; break; end end rawset(t,k,v); return v; end});
-local excluded,me,guildMembersLast = {},UnitName("player").."-"..Realm,0;
-local check = "|TInterface\\Buttons\\UI-CheckBox-Check:14:14:0:0:32:32:5:27:5:27|t";
-local spacer = "|TInterface\\Common\\SPACER:14:14:0:0:8:8:0:8:0:8|t";
-local icons = "|T%s:14:14:0:0:32:32:2:30:2:30|t";
-local LR = LibStub("LibRaces-1.0");
-local LDB,LDBObject,LDBIcon
-local members = {};
+local check,spacer,icons = "|TInterface\\Buttons\\UI-CheckBox-Check:14:14:0:0:32:32:5:27:5:27|t","|TInterface\\Common\\SPACER:14:14:0:0:8:8:0:8:0:8|t","|T%s:14:14:0:0:32:32:2:30:2:30|t";
+local guildMembersLast,Realm,LDB,LDBObject,LDBIcon = 0,false;
 
+--==[ Coloured print function ]==--
 function ns.print(...)
-	local colors,t,T,c = {"0088ff","00ff00","ff0000","44ffff","ffff00","ff8800","ff00ff","ffffff"},{},{...},1;
-	tinsert(T,1,ns.L[addon]..":");
-	for i=1, #T do
-		T[i] = tostring(T[i]);
-		if T[i]:match("||c") then
-			tinsert(t,T[i])
-		else
-			tinsert(t,"|cff"..colors[c]..T[i].."|r");
-			c = c<#colors and c+1 or 1;
+	local a,colors,t,c,v = {...},{"0099ff","00ff00","ff6060","44ffff","ffff00","ff8800","ff44ff","ffffff"},{},1;
+	tinsert(a,1,"|cff0099ff"..((a[1]==true and "SC") or (a[1]=="||" and "||") or addon).."|r"..(a[1]~="||" and ":" or ""));
+	if type(a[2])=="boolean" or a[2]=="||" then
+		tremove(a,2);
+	end
+	for i=1, #a do
+		v = tostring(a[i]);
+		if not v:match("||c") then
+			v,c = "|cff"..colors[c]..v.."|r", c<#colors and c+1 or 1;
 		end
+		tinsert(t,v);
 	end
 	print(unpack(t));
 end
 
-local debugMode = (version=="@".."project-version".."@");
+local debugMode = ("@project-version@"=="@".."project-version".."@");
 function ns.debug(...)
 	if debugMode then
-		ns.print("debug",...);
+		ns.print("<debug>",...);
 	end
 end
 
+--==[ Short realm name ]==--
+do
+	local realm = GetRealmName();
+	local pattern = "^"..(realm:gsub("(.)","[%1]*")).."$";
+	for i,v in ipairs(GetAutoCompleteRealms()) do
+		if v:match(pattern) then
+			Realm = v;
+			break;
+		end
+	end
+	if not Realm then
+		Realm = realm:gsub(" ",""):gsub("%-","");
+	end
+end
 
 --==[ LibColors ]==--
 local LC = LibStub("LibColors-1.0");
@@ -56,11 +66,6 @@ for i,v in ipairs(LFG_LIST_GROUP_DATA_CLASS_ORDER)do
 	classIndexByName[LOCALIZED_CLASS_NAMES_MALE[v]]=i;
 end
 
-local raceValues = {};
-for i,v in ipairs(achievementRaces)do
-	raceValues[v] = L[v];
-end
-
 local function sortClasses(a,b)
 	return a[cString]<b[cString];
 end
@@ -70,44 +75,42 @@ local function sortLevelAndStanding(a,b)
 	return LaS:format(a[2],a[4])>LaS:format(b[2],b[4]);
 end
 
+local function MouseIsOver(region, topOffset, bottomOffset, leftOffset, rightOffset)
+	if region and region.IsMouseOver then -- blizzards version doesn't check existance of IsMouseOver function
+		return region:IsMouseOver(topOffset, bottomOffset, leftOffset, rightOffset);
+	end
+end
+
+
 
 --==[ guild member list ]==--
-local guildMembers,guildMembersNote,raceCustomPattern,added,guildMembersLocked = {},{},{},{},false;
-
-local function notes2race(name,note,notesource)
-	local race,raceEng = LR:FindRaceNameInText(note);
-	if race then
-		guildMembersNote[name].found = raceEng:upper(); -- for notifyWrongNotes
-		guildMembersNote[name].foundSource = notesource;
-		StayClassyToonDB[name] = raceEng:upper();
-	else
-		local F = "_FEMALE";
-		for i=1, #achievementRaces do
-			local race = achievementRaces[i];
-			if ((raceCustomPattern[race] and note:find(raceCustomPattern[race])) or note:find(race))
-			or ((raceCustomPattern[race..F] and note:find(raceCustomPattern[race..F])) or note:find(race..F)) then
-				guildMembersNote[name].found = race;  -- for notifyWrongNotes
-				guildMembersNote[name].foundSource = notesource;
-				StayClassyToonDB[name] = race;
-				break;
+local guildMembers,guids,guildMembersLocked,queryTicker = {},{},{},false;
+local function addRace(name,race)
+	race = race:upper();
+	if race=="SCOURGE" then
+		race = "UNDEAD";
+	end
+	StayClassyToonDB[name] = race;
+end
+local function queryRaceByGUID()
+	if #guids>0 then
+		local c = 0;
+		for i=#guids, 1, -1 do
+			local guid,name,race,_ = unpack(guids[i]);
+			_,_,_,race = GetPlayerInfoByGUID(guid);
+			if race then
+				addRace(name,race);
+				tremove(guids,i);
+			end
+			c = c+1;
+			if c>20 then
+				return; -- 20 requets per second
 			end
 		end
+	else
+		queryTicker:Cancel();
+		queryTicker=nil;
 	end
-end
-
-local function optionsRaceFunc(info,value)
-	local name = info[#info];
-	if value~=nil then
-		StayClassyToonDB[name] = value;
-	end
-	return StayClassyToonDB[name];
-end
-
-local function optionsHideKnown(info)
-	if StayClassyDB.hideMembersWithKnownRace and StayClassyToonDB[info[#info]]~=nil then
-		return true;
-	end
-	return false;
 end
 
 local function updateGuildMembers()
@@ -117,40 +120,35 @@ local function updateGuildMembers()
 		return;
 	end
 	-- check guild members
-	local optionMembersByClass = {};
 	local tmp,changed,num = {},false,GetNumGuildMembers();
+	if #guildMembers==num then return end
 	for i=1, num do
-		local name,_,_,level,_,_,note,offnote,_,_,class,_,_,_,_,repStanding = GetGuildRosterInfo(i);
+		local name,rank,_,level,_,_,_,_,_,_,class,_,_,_,_,repStanding,guid = GetGuildRosterInfo(i); -- @blizzard: thanks for guid :)
+		local y,m,d,h = GetGuildRosterLastOnline(i);
+		y,m,d,h = y or 0, m or 0, d or 0, h or 0;
+		local off,race = ((((y*12)+m)*30.5+d)*24+h);
 		if not name:find("%-") then
 			name = name.."-"..Realm;
 		end
-		if optionMembersByClass[class]==nil then
-			optionMembersByClass[class] = {num=0,numUnknown=0,entries={}};
+		if StayClassyToonDB[name] then
+			race = StayClassyToonDB[name];
+		elseif class=="DEMONHUNTER" then
+			race = faction=="Alliance" and "NIGHTELF" or "BLOODELF";
+			StayClassyToonDB[name] = race;
+		elseif guid then
+			_,_,_,race = GetPlayerInfoByGUID(guid);
+			if race then
+				addRace(name,race)
+			else
+				tinsert(guids,{guid,name});
+			end
 		end
-		optionMembersByClass[class].num = optionMembersByClass[class].num+1;
-		if StayClassyToonDB[name]==nil then
-			optionMembersByClass[class].numUnknown = optionMembersByClass[class].numUnknown+1;
-		end
-		optionMembersByClass[class].entries[name] = {type="select", name=name, values=raceValues, get=optionsRaceFunc, set=optionsRaceFunc, hidden=optionsHideKnown };
-		note,offnote = note:trim(),offnote:trim();
-		if guildMembersNote[name]==nil then
-			guildMembersNote[name]={};
-		end
-		if StayClassyDB.raceDetectionNotes and note~="" and guildMembersNote[name].note~=note then
-			guildMembersNote[name].note=note;
-			notes2race(name,note,1);
-		end
-		if StayClassyDB.raceDetectionOfficer and offnote~="" and guildMembersNote[name].offnote~=offnote then
-			guildMembersNote[name].offnote = offnote;
-			notes2race(name,offnote,2);
-		end
-		tinsert(tmp,{name,level,class,repStanding,note,offnote});
+		tinsert(tmp,{name,level,class,repStanding});
 	end
 	guildMembers = tmp;
 	guildMembersLast=now+5; -- +5sec
-	for k,v in pairs(optionMembersByClass)do
-		members[k].name = C(k,LOCALIZED_CLASS_NAMES_MALE[k]).." ("..v.numUnknown.."/"..v.num..")";
-		members[k].args = v.entries;
+	if #guids>0 and (not queryTicker) then
+		queryTicker = C_Timer.NewTicker(0.5,queryRaceByGUID);
 	end
 end
 
@@ -189,8 +187,7 @@ local function panel_fix(parent)
 end
 
 local function openAchievement(id)
-	if type(id)=="table" then id = id.id; end
-	AchievementObjectiveTracker_OpenAchievement(nil,id);
+	OpenAchievementFrameToAchievement(type(id)=="table" and id.id or id);
 end
 
 local function tt2AddLine(name,realm,class,level,reqLevel,reputation,reqReputation)
@@ -201,7 +198,7 @@ local function tt2AddLine(name,realm,class,level,reqLevel,reputation,reqReputati
 	);
 end
 
-local function tooltip2OnEnter(self)
+local function tooltip2OnEnter(self, data)
 	tt2 = LibQTip:Acquire(addon.."2",3,"LEFT","RIGHT","RIGHT","RIGHT");
 	local f = tt:GetCenter();
 	local u = UIParent:GetCenter();
@@ -212,19 +209,19 @@ local function tooltip2OnEnter(self)
 	end
 	tt2:Clear();
 
-	tt2:AddLine(C("sc_header",NAME),C("sc_header",LEVEL)..C("sc_gray1"," ("..self.info.reqLevel..")"),C("sc_header",REPUTATION)..C("sc_gray1"," (".._G["FACTION_STANDING_LABEL"..self.info.reqReputation]..")"));
+	tt2:AddLine(C("sc_header",NAME),C("sc_header",LEVEL)..C("sc_gray1"," ("..data.reqLevel..")"),C("sc_header",REPUTATION)..C("sc_gray1"," (".._G["FACTION_STANDING_LABEL"..data.reqReputation]..")"));
 	tt2:AddSeparator();
 
 	if StayClassyDB.showToonUnknownRace then
-		tt2:SetCell(tt2:AddLine(),1,C("sc_gray1",self.info.label),nil,"LEFT",0);
+		tt2:SetCell(tt2:AddLine(),1,C("sc_gray1",data.label),nil,"LEFT",0);
 	end
 
-	local c,a,b = 0,GetGuildMembersByClass(self.info.class);
+	local c,a,b = 0,GetGuildMembersByClass(data.class);
 	table.sort(a,sortLevelAndStanding);
 	for i,v in pairs(a)do
-		if StayClassyToonDB[v[1]]==self.info.race then
+		if StayClassyToonDB[v[1]]==data.race then
 			local name,realm = strsplit("-",v[1]);
-			tt2AddLine(name,realm,self.info.class,v[2],self.info.reqLevel,v[4],self.info.reqReputation);
+			tt2AddLine(name,realm,data.class,v[2],data.reqLevel,v[4],data.reqReputation);
 			c=c+1;
 		end
 	end
@@ -238,7 +235,7 @@ local function tooltip2OnEnter(self)
 		table.sort(b,sortLevelAndStanding);
 		for i,v in pairs(b)do
 			local name,realm = strsplit("-",v[1]);
-			tt2AddLine(name,realm,self.info.class,v[2],self.info.reqLevel,v[4],self.info.reqReputation);
+			tt2AddLine(name,realm,data.class,v[2],data.reqLevel,v[4],data.reqReputation);
 			c=c+1;
 		end
 	end
@@ -330,8 +327,7 @@ local function tooltipOnEnter(self)
 								candidates = " "..C(c>0 and "sc_gray2" or "sc_gray0",c);
 							end
 							tt:SetCell(l,c,flag.." "..C(class,v[cString])..candidates,nil,"LEFT");
-							tt.lines[l].cells[c].info = {race=achievementRaces[i],class=class,reqLevel=data[achievements[i]].criteria[1][cReqQuantity],reqReputation=6,label=data[achievements[i]][aName]};
-							tt:SetCellScript(l,c,"OnEnter",tooltip2OnEnter);
+							tt:SetCellScript(l,c,"OnEnter",tooltip2OnEnter,{race=achievementRaces[i],class=class,reqLevel=data[achievements[i]].criteria[1][cReqQuantity],reqReputation=6,label=data[achievements[i]][aName]});
 							tt:SetCellScript(l,c,"OnLeave",tooltip2OnLeave);
 							c=c+1;
 						end
@@ -374,7 +370,7 @@ local function RegisterDataBroker()
 					Lib:Close(addon);
 				else
 					Lib:Open(addon);
-					Lib.OpenFrames[addon]:SetStatusText(("%s: %s, %s: %s"):format(GAME_VERSION_LABEL,version,L["Author"],author));
+					Lib.OpenFrames[addon]:SetStatusText(("%s: %s, %s: %s"):format(GAME_VERSION_LABEL,"@project-version@",L["Author"],author));
 				end
 			end
 		end
@@ -384,27 +380,6 @@ end
 
 
 --==[ Option panel ]==--
-local function raceOptionFunc(info,value)
-	local key = info[#info];
-	if value~=nil then
-		StayClassyDB[key] = value;
-		updateGuildMembers();
-	end
-	return StayClassyDB[key];
-end
-
-local function raceOption(order,rType,faction)
-	local key = "raceDetection"..rType..(faction~=nil and faction or "");
-	return {
-		type="group", order=order, inline=true, name="",
-		args={
-			[key.."_Label"] = {type="description",name=C("dkyellow",L[rType]),width="normal", fontSize="medium", order=0},
-			[key] = {type="input", order=1, name=MALE},
-			[key.."_FEMALE"] = {type="input", order=2, name=FEMALE}
-		}
-	};
-end
-
 local function optionsFunc(info,value)
 	local key = info[#info];
 	if key == "minimap" then
@@ -421,6 +396,15 @@ local function optionsFunc(info,value)
 	end
 end
 
+local function getRanks()
+	if not IsInGuild() then return {} end
+	local lst,num = {["_none"]=ADDON_DISABLED},GuildControlGetNumRanks();
+	for i=1, num do
+		lst["rank"..i] = GuildControlGetRankName(i);
+	end
+	return lst;
+end
+
 local options = {
 	type = "group",
 	name = addon,
@@ -429,164 +413,87 @@ local options = {
 	set = optionsFunc,
 	args = {
 		loadedMsg = {
-			type = "toggle", width = "double", order = 1,
-			name = L["OptLoadedMsg"], desc = nil -- L["OptLoadedMsgDesc"]
+			type = "toggle", order = 1,
+			name = L["AddOnLoaded"], desc = L["OptLoadedMsgDesc"]
 		},
 		minimap = {
-			type = "toggle", width = "double", order = 2,
-			name = L["OptMinimap"], desc = nil -- L["OptMinimapDesc"]
+			type = "toggle", order = 2,
+			name = L["OptMinimap"], desc = L["OptMinimapDesc"]
 		},
-		section1 = {
-			type = "group", order = 2,
-			name = L["OptTabTT"],
+		header = {
+			type = "header", order = 3,
+			name = L["OptTabTT"]
+		},
+		overview = {
+			type = "group", order = 4, inline = true,
+			name = L["OptHeadAOV"],
 			args = {
-				overview = {
-					type = "group", order = 1, inline = true,
-					name = L["OptHeadAOV"],
-					args = {
-						expandCompleted = {
-							type = "toggle", width = "full", order = 1,
-							name = L["OptExpand"], desc = nil -- L["OptExpandDesc"],
-						},
-						showCompletedCriteria = {
-							type = "toggle", width = "full", order = 2,
-							name = L["OptShowCompleted"], desc = nil -- L["OptShowCompletedDesc"],
-						},
-						showRequirements = {
-							type = "toggle", width = "full", order = 3,
-							name = L["OptRequire"], desc = nil -- L["OptRequireDesc"],
-						},
-						showCandidates = {
-							type = "toggle", width = "full", order = 4,
-							name = L["OptShowCount"], desc = nil -- L["OptShowCountDesc"],
-						}
-					}
+				expandCompleted = {
+					type = "toggle", width = "double", order = 1,
+					name = L["OptExpand"], desc = L["OptExpandDesc"]
 				},
-				checklist = {
-					type = "group", order = 2, inline = true,
-					name = L["OptHeadCCL"],
-					args = {
-						showToonUnknownRace = {
-							type = "toggle", width = "full", order = 1,
-							name = L["OptShowUnknown"], desc = nil --  L["OptShowUnknownDesc"],
-						}
-					}
-				}
+				showCompletedCriteria = {
+					type = "toggle", width = "double", order = 2,
+					name = L["OptShowCompleted"], desc = L["OptShowCompletedDesc"]
+				},
+				showRequirements = {
+					type = "toggle", width = "double", order = 3,
+					name = L["OptRequire"], desc = L["OptRequireDesc"]
+				},
+				showCandidates = {
+					type = "toggle", width = "double", order = 4,
+					name = L["OptShowCount"], desc = L["OptShowCountDesc"]
+				},
 			}
 		},
-		section3 = {
-			type = "group", order = 4,
-			name = L["OptTabRT"],
-			childGroups = "tab",
+		checklist = {
+			type = "group", order = 5, inline = true,
+			name = L["OptHeadCCL"],
 			args = {
-				desc = {
-					type = "description", order = 0, fontSize = "medium",
-					name = L["OptRTDesc"]
+				showToonUnknownRace = {
+					type = "toggle", width = "full", order = 1,
+					name = L["OptShowUnknown"], desc = L["OptShowUnknownDesc"],
 				},
-				raceDetectionNotes = {
-					type = "toggle", order = 1,
-					name = L["OptScanNote"], desc = nil -- L["OptScanNoteDesc"]
-				},
-				raceDetectionOfficer = {
-					type = "toggle", order = 2,
-					name = L["OptScanOffNote"], desc = nil -- L["OptScanOffNoteDesc"]
-				},
-				notifyWrongNotes = {
-					type = "toggle", order = 3,
-					name = L["OptNotifyWrong"], desc = L["OptNotidyWrongDesc"]
-				},
-				races_alliance = {
-					type = "group", order = 4,
-					name = FACTION_ALLIANCE,
-					childGroups = "tab",
-					get=raceOptionFunc,
-					set=raceOptionFunc,
-					args = {
-						HUMAN    = raceOption(1,"HUMAN"),
-						NIGHTELF = raceOption(2,"NIGHTELF"),
-						GNOME    = raceOption(3,"GNOME"),
-						DWARF    = raceOption(4,"DWARF"),
-						DRAENEI  = raceOption(5,"DRAENEI"),
-						WORGEN   = raceOption(6,"WORGEN"),
-						PANDAREN = raceOption(7,"PANDAREN",1),
-					},
-					hidden = faction~="Alliance"
-				},
-				races_horde = {
-					type = "group", order = 4,
-					name = FACTION_HORDE,
-					childGroups = "tab",
-					get=raceOptionFunc,
-					set=raceOptionFunc,
-					args = {
-						ORC      = raceOption(1,"ORC"),
-						TAUREN   = raceOption(2,"TAUREN"),
-						TROLL    = raceOption(3,"TROLL"),
-						UNDEAD   = raceOption(4,"UNDEAD"),
-						BLOODELF = raceOption(5,"BLOODELF"),
-						GOBLIN   = raceOption(6,"GOBLIN"),
-						PANDAREN = raceOption(7,"PANDAREN",2),
-					},
-					hidden = faction~="Horde"
-				},
-				notifications = {
-					type = "group", order = 5,
-					name = L["OptTabNotifications"],
-					args = {
-						no_data = {
-							type = "description", order = 1,
-							name = L["OptNoNotifications"]
-						}
-					}
-				}
 			}
 		},
-		section4 = {
-			type = "group", order = 5,
-			name = L["OptTabMRT"],
-			childGroups = "tree",
+		inactive = {
+			type = "group", order = 6, inline = true,
+			name = L["OptInact"],
 			args = {
-				hideMembersWithKnownRace = {
-					type = "toggle", order = 0, width = "full",
-					name = L["OptHideKnown"]
+				inactiveLabel = {
+					type = "description", order = 2, fontSize = "medium",
+					name = L["OptInactDesc"]
+				},
+				inactiveTimeType = {
+					type = "select", order = 3,
+					name = L["OptInactTimeType"],
+					values = {
+						years = L["Years"],
+						months = L["Months"],
+						days = L["Days"],
+						hours = L["Hours"],
+						_none = ADDON_DISABLED
+					}
+				},
+				inactiveTimeNum = {
+					type = "range", order = 4, width = "double",
+					name = L["OptInactTimeNum"],
+					min = 1, max = 500, step = 1,
+					disabled = function() return StayClassyDB.inactiveTimeType=="_none" end
+				},
+				inactiveRank = {
+					type = "select", order = 5,
+					name = L["OptInactRank"], desc = L["OptInactRankDesc"],
+					values = getRanks
+				},
+				inactiveHide = {
+					type = "toggle", order = 6,
+					name = L["OptInactHide"],
 				}
 			}
 		}
 	}
 };
-
--- generate classes lists
-for i,v in ipairs(CLASS_SORT_ORDER)do
-	local label = C(v,LOCALIZED_CLASS_NAMES_MALE[v]);
-	options.args.section4.args[v] = { type="group", order=i+1, name=label, args={} };
-	members[v] = options.args.section4.args[v];
-end
-
-local notifiedNames = {};
-local function addNotification(name)
-	if notifiedNames[name]~=nil then return end
-	notifiedNames[name] = true;
-	local msg = L["OptNotifyMsg"]:format(
-		L[StayClassyToonDB[name]],
-		guildMembersNote[name].foundSource==1 and LABEL_NOTE or OFFICER_NOTE_COLON,
-		L[guildMembersNote[name].found]
-	);
-	options.args.section3.args.notifications.args.no_data.hidden=true;
-	options.args.section3.args.notifications.args['notification'..name] = {
-		type = "group", order = 2,
-		guiInline = true,
-		name = name,
-		args = {
-			message = {
-				type = "description",
-				name = msg
-			}
-		}
-	}
-	if StayClassyDB.notifyWrongNotes then
-		ns.print(name,"\n",msg);
-	end
-end
 
 local function RegisterOptionPanel()
 	LibStub("AceConfig-3.0"):RegisterOptionsTable(addon, options);
@@ -596,7 +503,6 @@ end
 
 --==[ Data update and events ]==--
 local ticker,doUpdate = nil,true;
-
 local function readAchievements()
 	data[achievements.meta] = {GetAchievementInfo(achievements.meta)};
 	for i=1, #achievements do
@@ -609,159 +515,83 @@ local function readAchievements()
 	if data[achievements.meta][aCompleted] and LDB then
 		LDB.text = C("green",addon);
 	end
-	doUpdate=false;
 end
 
-local function updateAchievements(self,event)
-	if self and event then
-		doUpdate = true;
-	elseif doUpdate and IsInGuild() then
+local function updateAchievements()
+	if doUpdate and IsInGuild() then
+		doUpdate=false;
 		-- focus achievements > force update criteria...
 		if not (AchievementFrame and AchievementFrame:IsShown()) then
 			for i=1, #achievements do
 				SetFocusedAchievement(achievements[i]);
 			end
 		end
-		C_Timer.After(2,readAchievements);
+		C_Timer.After(1,readAchievements);
+		doUpdate=false;
 	end
 end
 
-local function GetRaceByChatMsgGUID(self,event,...)
-	if not IsInGuild() then return end
-	if achievements.meta and data[achievements.meta] and data[achievements.meta][aCompleted] then return end
-	local _,_,_,_,_,_,_,_,_,_,_,guid = ...;
-	if tostring(guid):find("^Player%-%d+%-") then
-		local className,classId,raceName,race,gender,toon = GetPlayerInfoByGUID(guid);
-		if not toon:find("%-") then toon = toon.."-"..Realm; end
-		if IsGuildMember(toon) then
-			race = race:upper();
-			if race=="SCOURGE" then race = "UNDEAD" end
-			StayClassyToonDB[toon] = race;
-			if guildMembersNote[toon] and guildMembersNote[toon].found~=StayClassyToonDB[toon] then
-				addNotification(toon);
-			end
+local frame = CreateFrame("frame");
+frame:SetScript("OnEvent",function(self,event,...)
+	if event=="ADDON_LOADED" and addon==... then
+		if StayClassyDB==nil then
+			StayClassyDB = {};
 		end
-	elseif debug and not excluded[event] then
-		if toon~="-"..Realm then
-			excluded[event] = true;
+		if StayClassyToonDB==nil then
+			StayClassyToonDB = {};
 		end
-		debug(event,"(no guid)");
-	end
-end
+		for i,v in pairs({
+			-- defaults
+			minimap = {hide=false},
+			loadedMsg = true,
+			expandCompleted = false,
+			showCompletedCriteria = false,
+			showRequirements = true,
+			showCandidates = true,
+			showToonUnknownRace = false,
 
-local frame,events = CreateFrame("frame"),{
-	ADDON_LOADED = function(self,event,addonName)
-		if addon==addonName then
-			if StayClassyDB==nil then
-				StayClassyDB = {};
+			raceDetectionNotes = "nil", -- deprecated
+			raceDetectionOfficer = "nil", -- deprecated
+			notifyDetected = "nil", -- deprecated
+			hideMembersWithKnownRace = "nil", -- deprecated
+
+			inactiveRank = "_none",
+			inactiveHide = false,
+			inactiveTimeType = "days",
+			inactiveTimeNum = 60
+		})do
+			if v=="nil" and StayClassyDB[i] then
+				StayClassyDB[i] = nil;
+			elseif StayClassyDB[i]==nil then
+				StayClassyDB[i] = v;
 			end
-			if StayClassyToonDB==nil then
-				StayClassyToonDB = {};
-			end
-			for i,v in pairs({
-				minimap = {hide=false},
-				loadedMsg = true,
-				--toonrace = {},
-				expandCompleted = false,
-				showCompletedCriteria = false,
-				showRequirements = true,
-				showCandidates = true,
-				showToonUnknownRace = false,
-				raceDetectionNotes = false,
-				raceDetectionOfficer = false,
-				notifyWrongNotes = false,
-				hideMembersWithKnownRace = true
-			})do
-				if StayClassyDB[i]==nil then
-					StayClassyDB[i] = v;
-				end
-			end
-			-- little internal migration
-			if not StayClassyDB.migrateUNDEAD then
-				for k,v in pairs(StayClassyToonDB)do
-					if v=="SCOURGE" then
-						StayClassyToonDB[k] = "UNDEAD";
-					end
-				end
-				if StayClassyDB.raceDetectionSCOURGE~=nil then
-					StayClassyDB.raceDetectionUNDEAD=StayClassyDB.raceDetectionSCOURGE;
-					StayClassyDB.raceDetectionSCOURGE=nil;
-				end
-				if StayClassyDB.raceDetectionSCOURGE_FEMALE~=nil then
-					StayClassyDB.raceDetectionUNDEAD_FEMALE=StayClassyDB.raceDetectionSCOURGE_FEMALE;
-					StayClassyDB.raceDetectionSCOURGE_FEMALE=nil;
-				end
-				StayClassyDB.migrateUNDEAD=true;
-			end
-			--
-			RegisterDataBroker();
-			RegisterOptionPanel();
-			--
-			for i=1, #achievementRaces do
-				local key = "raceDetection"..achievementRaces[i];
-				local keyF = key.."_FEMALE";
-				if achievementRaces[i]=="PANDAREN" then
-					key = key .. (faction=="Alliance" and 1 or 2);
-					keyF = keyF .. (faction=="Alliance" and 1 or 2);
-				end
-				if tostring(StayClassyDB[key]):trim()~="" then
-					raceCustomPattern[achievementRaces[i]]=StayClassyDB[key];
-				end
-				if tostring(StayClassyDB[keyF]):trim()~="" then
-					raceCustomPattern[achievementRaces[i].."_FEMALE"]=StayClassyDB[keyF];
-				end
-			end
-			--
-			if StayClassyDB.loadedMsg then
-				ns.print(L.AddOnLoaded);
-			end
-			self:UnregisterEvent(event);
 		end
-	end,
-	-- track achievement
-	PLAYER_ENTERING_WORLD = function(self,event,...)
-		if IsInGuild() then
-			local _,race = UnitRace("player");
-			StayClassyToonDB[me] = race:upper();
+		--
+		RegisterDataBroker();
+		RegisterOptionPanel();
+		--
+		if StayClassyDB.loadedMsg then
+			ns.print(L.AddOnLoaded);
 		end
-		ticker = C_Timer.NewTicker(5,updateAchievements);
 		self:UnregisterEvent(event);
-	end,
-	-- detect faction changes
-	NEUTRAL_FACTION_SELECT_RESULT = function(self,event,...)
+		self:RegisterEvent("PLAYER_ENTERING_WORLD");
+		self:RegisterEvent("NEUTRAL_FACTION_SELECT_RESULT");
+		self:RegisterEvent("ACHIEVEMENT_EARNED");
+		self:RegisterEvent("CRITERIA_UPDATE");
+		self:RegisterEvent("PLAYER_GUILD_UPDATE");
+		self:RegisterEvent("GUILD_ROSTER_UPDATE");
+	elseif event=="PLAYER_ENTERING_WORLD" then
+		if not ticker then
+			ticker = C_Timer.NewTicker(5,updateAchievements);
+		end
+		self:UnregisterEvent(event);
+	elseif event=="NEUTRAL_FACTION_SELECT_RESULT" then
 		faction,Faction = UnitFactionGroup("player");
-	end,
-	ACHIEVEMENT_EARNED = updateAchievements,
-	CRITERIA_UPDATE = updateAchievements,
-	PLAYER_GUILD_UPDATE = updateAchievements,
-	-- guild roster
-	GUILD_ROSTER_UPDATE = function(self,event,...)
+	elseif event=="ACHIEVEMENT_EARNED" or event=="CRITERIA_UPDATE" or event=="PLAYER_GUILD_UPDATE" then
+		doUpdate = true;
+	elseif event=="GUILD_ROSTER_UPDATE" then
 		updateGuildMembers();
-	end,
-	-- detect guild member races
-	CHAT_MSG_ACHIEVEMENT = GetRaceByChatMsgGUID,
-	CHAT_MSG_AFK = GetRaceByChatMsgGUID,
-	CHAT_MSG_CHANNEL_JOIN = GetRaceByChatMsgGUID,
-	CHAT_MSG_CHANNEL_LEAVE = GetRaceByChatMsgGUID,
-	CHAT_MSG_DND = GetRaceByChatMsgGUID,
-	CHAT_MSG_EMOTE = GetRaceByChatMsgGUID,
-	CHAT_MSG_GUILD = GetRaceByChatMsgGUID,
-	CHAT_MSG_GUILD_ACHIEVEMENT = GetRaceByChatMsgGUID,
-	CHAT_MSG_GUILD_ITEM_LOOTED = GetRaceByChatMsgGUID,
-	CHAT_MSG_INSTANCE_CHAT = GetRaceByChatMsgGUID,
-	CHAT_MSG_INSTANCE_CHAT_LEADER = GetRaceByChatMsgGUID,
-	CHAT_MSG_OFFICER = GetRaceByChatMsgGUID,
-	CHAT_MSG_PARTY = GetRaceByChatMsgGUID,
-	CHAT_MSG_PARTY_LEADER = GetRaceByChatMsgGUID,
-	CHAT_MSG_RAID = GetRaceByChatMsgGUID,
-	CHAT_MSG_RAID_LEADER = GetRaceByChatMsgGUID,
-	CHAT_MSG_RAID_WARNING = GetRaceByChatMsgGUID,
-	CHAT_MSG_SAY = GetRaceByChatMsgGUID,
-	CHAT_MSG_TEXT_EMOTE = GetRaceByChatMsgGUID,
-	CHAT_MSG_WHISPER = GetRaceByChatMsgGUID,
-	CHAT_MSG_YELL = GetRaceByChatMsgGUID
-};
-
-frame:SetScript("OnEvent",function(self,event,...) if events[event] then events[event](self,event,...); end end);
-for i,v in pairs(events)do frame:RegisterEvent(i); end
+	end
+end);
+frame:RegisterEvent("ADDON_LOADED");
 

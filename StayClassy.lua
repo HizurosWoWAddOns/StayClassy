@@ -12,26 +12,28 @@ local check,spacer,icons = "|TInterface\\Buttons\\UI-CheckBox-Check:14:14:0:0:32
 local guildMembersLast,Realm,LDB,LDBObject,LDBIcon = 0,false;
 
 --==[ Coloured print function ]==--
-function ns.print(...)
-	local a,colors,t,c,v = {...},{"0099ff","00ff00","ff6060","44ffff","ffff00","ff8800","ff44ff","ffffff"},{},1;
-	tinsert(a,1,"|cff0099ff"..((a[1]==true and "SC") or (a[1]=="||" and "||") or addon).."|r"..(a[1]~="||" and ":" or ""));
-	if type(a[2])=="boolean" or a[2]=="||" then
-		tremove(a,2);
-	end
-	for i=1, #a do
-		v = tostring(a[i]);
-		if not v:match("||c") then
-			v,c = "|cff"..colors[c]..v.."|r", c<#colors and c+1 or 1;
+do
+	local addon_short = "SC";
+	local colors = {"0099ff","00ff00","ff6060","44ffff","ffff00","ff8800","ff44ff","ffffff"};
+	local function colorize(...)
+		local t,c,a1 = {tostringall(...)},1,...;
+		if type(a1)=="boolean" then tremove(t,1); end
+		if a1~=false then
+			tinsert(t,1,"|cff0099ff"..((a1==true and addon_short) or (a1=="||" and "||") or addon).."|r"..(a1~="||" and ":" or ""));
+			c=2;
 		end
-		tinsert(t,v);
+		for i=c, #t do
+			if not t[i]:find("\124c") then
+				t[i],c = "|cff"..colors[c]..t[i].."|r", c<#colors and c+1 or 1;
+			end
+		end
+		return unpack(t);
 	end
-	print(unpack(t));
-end
-
-local debugMode = ("@project-version@"=="@".."project-version".."@");
-function ns.debug(...)
-	if debugMode then
-		ns.print("<debug>",...);
+	function ns.print(...)
+		print(colorize(...));
+	end
+	function ns.debug(...)
+		ConsolePrint(date("|cff999999%X|r"),colorize(...));
 	end
 end
 

@@ -1,7 +1,7 @@
 
 StayClassyDB,StayClassyToonDB = {},{};
 local addon, ns, _ = ...;
-local L,author = ns.L,GetAddOnMetadata(addon,"Author");
+local L,author = ns.L,"@project-author@";
 local faction,Faction = UnitFactionGroup("player");
 local data,achievements = {},faction=="Alliance" and {meta=5152,5151,5153,5154,5155,5156,5157,6624} or {meta=5158,5160,5161,5162,5164,5163,5165,6625};
 local achievementRaces = faction=="Alliance" and {"HUMAN","NIGHTELF","GNOME","DWARF","DRAENEI","WORGEN","PANDAREN"} or {"ORC","TAUREN","TROLL","UNDEAD","BLOODELF","GOBLIN","PANDAREN"};
@@ -19,7 +19,7 @@ do
 		local t,c,a1 = {tostringall(...)},1,...;
 		if type(a1)=="boolean" then tremove(t,1); end
 		if a1~=false then
-			tinsert(t,1,"|cff0099ff"..((a1==true and addon_short) or (a1=="||" and "||") or addon).."|r"..(a1~="||" and ":" or ""));
+			tinsert(t,1,"|cff0099ff"..((a1==true and addon_short) or (a1=="||" and "||") or addon).."|r"..(a1~="||" and HEADER_COLON or ""));
 			c=2;
 		end
 		for i=c, #t do
@@ -300,9 +300,9 @@ local function tooltipOnEnter(self)
 				end
 				if StayClassyDB.showRequirements and not data[achievements[i]][aCompleted] then
 					requirements = " "
-								 ..C("sc_gray1","("..LEVEL..": ")
+								 ..C("sc_gray1","("..LEVEL..CHAT_HEADER_SUFFIX)
 								 ..C("sc_gray2",data[achievements[i]].criteria[1][cReqQuantity])
-								 ..C("sc_gray1",", "..REPUTATION..": ")
+								 ..C("sc_gray1",", "..REPUTATION..CHAT_HEADER_SUFFIX)
 								 ..C("sc_gray2",FACTION_STANDING_LABEL6)
 								 ..C("sc_gray1",")");
 				end
@@ -372,7 +372,7 @@ local function RegisterDataBroker()
 					Lib:Close(addon);
 				else
 					Lib:Open(addon);
-					Lib.OpenFrames[addon]:SetStatusText(("%s: %s, %s: %s"):format(GAME_VERSION_LABEL,"@project-version@",L["Author"],author));
+					Lib.OpenFrames[addon]:SetStatusText(("%s: %s, %s: %s"):format(GAME_VERSION_LABEL,"@project-version@",L["Author"],"@project-author@"));
 				end
 			end
 		end

@@ -1,4 +1,4 @@
-## Interface: 90001
+## Interface: 90002
 ## Title: Stay Classy
 ## Notes: Stay Classy - guild achievement helper
 ## Author: Hizuro

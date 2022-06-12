@@ -3,85 +3,12 @@ local addon, ns = ...;
 local L = setmetatable({},{__index=function(t,k) local v=tostring(k); rawset(t,k,v); return v; end});
 ns.L = L;
 
--- Hi. This addon needs your help for localization. :)
--- https://wow.curseforge.com/projects/stayclassy/localization
+-- Do you want to help localize this addon?
+-- https://www.curseforge.com/wow/addons/@cf-project-name@/localization
 
--- english localization
-
---@do-not-package@
-
-L["AddOnLoaded"] = "AddOn loaded..."
-L["Author"] = "Author"
-L["CollectData"] = "Oops... Collecting data."
-L["Days"] = "Days";
-L["Hours"] = "Hours";
-L["Months"] = "Months";
-L["NoCandidates"] = "No candidates found..."
-L["OptExpand"] = "Expand completed achievements"
-L["OptExpandDesc"] = "Display completed achievements in tooltip"
-L["OptHeadAOV"] = "Achievement overview"
-L["OptHeadCCL"] = "Candidates check list"
-L["OptInact"] = "Inactive members"
-L["OptInactDesc"] = "With the following options you can set an offline time limit or select a rank for inactive members. All members of this rank or offline limit will be ignored in cadidates counter from main tooltip and list separate in sub tooltip."
-L["OptInactHide"] = "Hide inactive"
-L["OptInactRank"] = "Inactive by rank"
-L["OptInactRankDesc"] = "Select a rank to exclude inactive member."
-L["OptInactTimeNum"] = "Offline time limit"
-L["OptInactTimeType"] = "Inactive by offline time limit"
-L["OptLoadedMsgDesc"] = "Display 'AddOn loaded...' message in chat window on startup";
-L["OptMinimap"] = "Minimap button"
-L["OptMinimapDesc"] = "Display own button for this addon on minimap"
-L["OptRequire"] = "Show achievement requirements"
-L["OptRequireDesc"] = "Display required level and guild reputation for individual archievements."
-L["OptShowCompleted"] = "Completed criteria"
-L["OptShowCompletedDesc"] = "Display completed criteria for individual achievements."
-L["OptShowCount"] = "Candidates counter"
-L["OptShowCountDesc"] = "Display the number of guild members with known race behind the criteria that can complete it."
-L["OptShowUnknown"] = "Candidates without detected races"
-L["OptShowUnknownDesc"] = "Display guild members without detected race in candidates tooltip";
-L["OptTabTT"] = "Tooltip options"
-L["UnknownRaces"] = "Unknown races";
-L["Years"] = "Years";
---@end-do-not-package@
 --@localization(locale="enUS", format="lua_additive_table", handle-subnamespaces="none", handle-unlocalized="ignore")@
--- /end english localization
 
 if LOCALE_deDE then
---@do-not-package@
-L["AddOnLoaded"] = "AddOn geladen..."
-L["Author"] = "Autor"
-L["CollectData"] = "Oops.. Sammle noch Daten."
-L["Days"] = "Tage"
-L["Hours"] = "Stunden"
-L["Months"] = "Monate"
-L["NoCandidates"] = "Keine Kandidaten gefunden..."
-L["OptExpand"] = "Erweiter abgeschlossene Erfolge"
-L["OptExpandDesc"] = "Zeige abgeschloßene Erfolge im Tooltip"
-L["OptHeadAOV"] = "Erfolgsübersicht"
-L["OptHeadCCL"] = "Kandidatencheckliste"
-L["OptInact"] = "Inaktive Mitglieder"
-L["OptInactDesc"] = "Mit den folgenden Optionen kannst du ein Zeitlimit für Offlinezeit setzen oder einen Rang für inaktive Mitglieder auswählen. Alle Mitglieder dieses Ranges oder Offline Limits werden ignoriert im Kandidatenzähler vom Haupttooltip und separat im Untertooltip aufgelistet."
-L["OptInactHide"] = "Verstecke Inaktive"
-L["OptInactRank"] = "Inaktiv durch Rang"
-L["OptInactRankDesc"] = "Wähle einen Rang um inaktive Mitglieder auszuschließen"
-L["OptInactTimeNum"] = "Offline Zeitlimit"
-L["OptInactTimeType"] = "Inaktiv durch Offline Zeitlimit"
-L["OptLoadedMsgDesc"] = "Zeige die 'AddOn geladen...' Nachricht im Chatfenster an Anfang"
-L["OptMinimap"] = "Minikartensymbol"
-L["OptMinimapDesc"] = "Zeige einen eigenen Knopf für dieses AddOn an der Minikarte an"
-L["OptRequire"] = "Zeige Erfolgsanforderungen"
-L["OptRequireDesc"] = "Zeige erforderliche Stufe und Gildenruf für einzelne Erfolge"
-L["OptShowCompleted"] = "Abgeschlossene Kriterien"
-L["OptShowCompletedDesc"] = "Zeige vervollständigte Kriterien für einzelne Erfolge."
-L["OptShowCount"] = "Kandidatenzähler"
-L["OptShowCountDesc"] = "Zeige die Anzahl Gildenmitglieder mit bekannter Rasse hinter dem Kriterium, die es vervollständigen können."
-L["OptShowUnknown"] = "Kandidaten ohne erkannte Rasse"
-L["OptShowUnknownDesc"] = "Zeige Gildenmitglieder ohne erkannte Rasse im Kandidaten-Tooltip"
-L["OptTabTT"] = "Tooltip Optionen"
-L["UnknownRaces"] = "Unbekannte Rassen"
-L["Years"] = "Jahre"
-
---@end-do-not-package@
 --@localization(locale="deDE", format="lua_additive_table", handle-subnamespaces="none", handle-unlocalized="ignore")@
 elseif LOCALE_esES then
 --@localization(locale="esES", format="lua_additive_table", handle-subnamespaces="none", handle-unlocalized="ignore")@
@@ -93,7 +20,7 @@ elseif LOCALE_itIT then
 --@localization(locale="itIT", format="lua_additive_table", handle-subnamespaces="none", handle-unlocalized="ignore")@
 elseif LOCALE_koKR then
 --@localization(locale="koKR", format="lua_additive_table", handle-subnamespaces="none", handle-unlocalized="ignore")@
-elseif LOCALE_ptBR then
+elseif LOCALE_ptBR or LOCALE_ptPT then
 --@localization(locale="ptBR", format="lua_additive_table", handle-subnamespaces="none", handle-unlocalized="ignore")@
 elseif LOCALE_ruRU then
 --@localization(locale="ruRU", format="lua_additive_table", handle-subnamespaces="none", handle-unlocalized="ignore")@
@@ -214,7 +141,7 @@ if LOCALE_koKR then
 	L.PANDAREN = "판다렌"
 end
 
-if LOCALE_ptBR then
+if LOCALE_ptBR or LOCALE_ptPT then
 	L.HUMAN = "Humano"
 	L.ORC = "Orc"
 	L.DWARF = "Anão"

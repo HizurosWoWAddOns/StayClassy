@@ -2,6 +2,9 @@
 StayClassyDB,StayClassyToonDB = {},{};
 local addon, ns, _ = ...;
 local L,author = ns.L,"@project-author@";
+ns.addon_short = "SC"
+ns.debugMode = "@project-version@" == "@".."project-version".."@"
+
 local faction,Faction = UnitFactionGroup("player");
 local data,achievements = {},faction=="Alliance" and {meta=5152,5151,5153,5154,5155,5156,5157,6624} or {meta=5158,5160,5161,5162,5164,5163,5165,6625};
 local achievementRaces = faction=="Alliance" and {"HUMAN","NIGHTELF","GNOME","DWARF","DRAENEI","WORGEN","PANDAREN"} or {"ORC","TAUREN","TROLL","UNDEAD","BLOODELF","GOBLIN","PANDAREN"};
@@ -10,32 +13,6 @@ local cString, cType, cCompleted, cQuantity, cReqQuantity, cCharName, cFlags, cA
 local classEN = setmetatable({},{__index=function(t,k) local v; for K,V in pairs(LOCALIZED_CLASS_NAMES_MALE)do if k==V then v=K; break; end end rawset(t,k,v); return v; end});
 local check,spacer,icons = "|TInterface\\Buttons\\UI-CheckBox-Check:14:14:0:0:32:32:5:27:5:27|t","|TInterface\\Common\\SPACER:14:14:0:0:8:8:0:8:0:8|t","|T%s:14:14:0:0:32:32:2:30:2:30|t";
 local guildMembersLast,Realm,LDB,LDBObject,LDBIcon = 0,false;
-
---==[ Coloured print function ]==--
-do
-	local addon_short = "SC";
-	local colors = {"82c5ff","00ff00","ff6060","44ffff","ffff00","ff8800","ff44ff","ffffff"};
-	local function colorize(...)
-		local t,c,a1 = {tostringall(...)},1,...;
-		if type(a1)=="boolean" then tremove(t,1); end
-		if a1~=false then
-			tinsert(t,1,"|cff82c5ff"..((a1==true and addon_short) or (a1=="||" and "||") or addon).."|r"..(a1~="||" and HEADER_COLON or ""));
-			c=2;
-		end
-		for i=c, #t do
-			if not t[i]:find("\124c") then
-				t[i],c = "|cff"..colors[c]..t[i].."|r", c<#colors and c+1 or 1;
-			end
-		end
-		return unpack(t);
-	end
-	function ns.print(...)
-		print(colorize(...));
-	end
-	function ns.debug(...)
-		ConsolePrint(date("|cff999999%X|r"),colorize(...));
-	end
-end
 
 --==[ Short realm name ]==--
 do
@@ -493,13 +470,19 @@ local options = {
 					name = L["OptInactHide"],
 				}
 			}
-		}
+		},
+		credits = {
+			type = "group", order = 200,
+			name = L["Credits"],
+			args = {}
+		},
 	}
 };
 
 local function RegisterOptionPanel()
 	LibStub("AceConfig-3.0"):RegisterOptionsTable(addon, options);
 	LibStub("AceConfigDialog-3.0"):AddToBlizOptions(addon);
+	ns.AddCredits(options.args.credits.args);
 end
 
 

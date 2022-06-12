@@ -393,7 +393,7 @@ local options = {
 	args = {
 		loadedMsg = {
 			type = "toggle", order = 1,
-			name = L["AddOnLoaded"], desc = L["OptLoadedMsgDesc"]
+			name = L["AddOnLoaded"], desc = L["AddOnLoadedDesc"].."|n|n|cff44ff44"..L["AddOnLoadedDescAlt"].."|r"
 		},
 		minimap = {
 			type = "toggle", order = 2,
@@ -555,7 +555,7 @@ frame:SetScript("OnEvent",function(self,event,...)
 		RegisterDataBroker();
 		RegisterOptionPanel();
 		--
-		if StayClassyDB.loadedMsg then
+		if StayClassyDB.loadedMsg or IsShiftKeyDown() then
 			ns.print(L.AddOnLoaded);
 		end
 		self:UnregisterEvent(event);

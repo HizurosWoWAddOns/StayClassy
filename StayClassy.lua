@@ -2,8 +2,8 @@
 StayClassyDB,StayClassyToonDB = {},{};
 local addon, ns, _ = ...;
 local L,author = ns.L,"@project-author@";
-ns.addon_short = "SC"
-ns.debugMode = "@project-version@" == "@".."project-version".."@"
+ns.debugMode = "@project-version@"=="@".."project-version".."@"
+LibStub("HizurosSharedTools").RegisterPrint(ns,addon,"SC");
 
 local faction,Faction = UnitFactionGroup("player");
 local data,achievements = {},faction=="Alliance" and {meta=5152,5151,5153,5154,5155,5156,5157,6624} or {meta=5158,5160,5161,5162,5164,5163,5165,6625};
@@ -482,7 +482,7 @@ local options = {
 local function RegisterOptionPanel()
 	LibStub("AceConfig-3.0"):RegisterOptionsTable(addon, options);
 	LibStub("AceConfigDialog-3.0"):AddToBlizOptions(addon);
-	ns.AddCredits(options.args.credits.args);
+	LibStub("HizurosSharedTools").AddCredit(addon,options.args.credits.args);
 end
 
 
@@ -556,7 +556,7 @@ frame:SetScript("OnEvent",function(self,event,...)
 		RegisterOptionPanel();
 		--
 		if StayClassyDB.loadedMsg or IsShiftKeyDown() then
-			ns.print(L.AddOnLoaded);
+			ns:print(L.AddOnLoaded);
 		end
 		self:UnregisterEvent(event);
 		self:RegisterEvent("PLAYER_ENTERING_WORLD");

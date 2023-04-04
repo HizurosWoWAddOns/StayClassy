@@ -27,9 +27,7 @@ externals:
 
     libs/LibQTip-1.0:
         url: https://repos.wowace.com/wow/libqtip-1-0
-        #tag: latest
-        ## current latest tag are too old. latest commit aren't tagged.
-        commit: 4c6a3d882373fa0b52c6b71d09acc0b87ec1ae00
+        tag: latest
 
     libs/LibColors-1.0:
         url: https://github.com/HizurosWoWAddOns/LibColors-1.0.git

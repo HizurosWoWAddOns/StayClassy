@@ -1,6 +1,7 @@
 ## Interface: 100100
 ## Title: Stay Classy
 ## Notes: Stay Classy - guild achievement helper
+## IconTexture: 464820
 ## Author: Hizuro
 ## Version: @project-version@
 ## SavedVariables: StayClassyDB, StayClassyToonDB

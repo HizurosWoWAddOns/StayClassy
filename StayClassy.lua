@@ -6,13 +6,18 @@ ns.debugMode = "@project-version@"=="@".."project-version".."@"
 LibStub("HizurosSharedTools").RegisterPrint(ns,addon,"SC");
 
 local faction,Faction = UnitFactionGroup("player");
-local data,achievements = {},faction=="Alliance" and {meta=5152,5151,5153,5154,5155,5156,5157,6624} or {meta=5158,5160,5161,5162,5164,5163,5165,6625};
-local achievementRaces = faction=="Alliance" and {"HUMAN","NIGHTELF","GNOME","DWARF","DRAENEI","WORGEN","PANDAREN"} or {"ORC","TAUREN","TROLL","UNDEAD","BLOODELF","GOBLIN","PANDAREN"};
+local data,achievements = {},faction=="Alliance" and {meta=5152,5151,5153,5154,5155,5156,5157--[[,6624]]} or {meta=5158,5160,5161,5162,5164,5163,5165--[[,6625]]};
+local achievementRaces = faction=="Alliance" and {"HUMAN","NIGHTELF","GNOME","DWARF","DRAENEI","WORGEN"--[[,"PANDAREN"]]} or {"ORC","TAUREN","TROLL","UNDEAD","BLOODELF","GOBLIN"--[[,"PANDAREN"]]};
 local _, aName, aPoints, aCompleted, aMonth, aDay, aYear, aDescription, aFlags, aIcon, aRewardText, aIsGuild, aWasEarnedByMe, aEarnedBy = 1,2,3,4,5,6,7,8,9,10,11,12,13,14; -- GetAchievementInfo
 local cString, cType, cCompleted, cQuantity, cReqQuantity, cCharName, cFlags, cAssetID, cQuantityString = 1,2,3,4,5,6,7,8,9; -- GetAchievementCriteriaInfo
 local classEN = setmetatable({},{__index=function(t,k) local v; for K,V in pairs(LOCALIZED_CLASS_NAMES_MALE)do if k==V then v=K; break; end end rawset(t,k,v); return v; end});
 local check,spacer,icons = "|TInterface\\Buttons\\UI-CheckBox-Check:14:14:0:0:32:32:5:27:5:27|t","|TInterface\\Common\\SPACER:14:14:0:0:8:8:0:8:0:8|t","|T%s:14:14:0:0:32:32:2:30:2:30|t";
 local guildMembersLast,Realm,LDB,LDBObject,LDBIcon = 0,false;
+
+if WOW_PROJECT_ID==WOW_PROJECT_MAINLINE then
+	tinsert(achievements,faction=="Alliance" and 6624 or 6625);
+	tinsert(achievementRaces,"PANDAREN");
+end
 
 --==[ Short realm name ]==--
 do
@@ -166,7 +171,13 @@ local function panel_fix(parent)
 end
 
 local function openAchievement(id)
-	OpenAchievementFrameToAchievement(type(id)=="table" and id.id or id);
+	if not id or not IsInGuild() then
+		ToggleAchievementFrame();
+	elseif OpenAchievementFrameToAchievement then
+		OpenAchievementFrameToAchievement(type(id)=="table" and id.id or id);
+	elseif WatchFrame_OpenAchievementFrame then
+		WatchFrame_OpenAchievementFrame(type(id)=="table" and id.id or id)
+	end
 end
 
 local function tt2AddLine(name,realm,class,level,reqLevel,reputation,reqReputation)
@@ -251,7 +262,12 @@ local function tooltipOnEnter(self)
 
 	tt:Hide();
 	tt:Clear();
-	if not data[achievements.meta] then
+
+	if not IsInGuild() then
+		tt:SetCell(tt:AddLine(),1,C("sc_header",addon),"LEFT",0);
+		tt:AddSeparator(4,0,0,0,0);
+		tt:SetCell(tt:AddLine(),1,C("sc_gray2",ERR_GUILD_PLAYER_NOT_IN_GUILD),nil,"CENTER",0);
+	elseif not data[achievements.meta] then
 		tt:SetCell(tt:AddLine(),1,C("sc_header",addon),"LEFT",0);
 		tt:AddSeparator(4,0,0,0,0);
 		tt:SetCell(tt:AddLine(),1,C("sc_gray2",L["CollectData"]),nil,"CENTER",0);
@@ -263,53 +279,48 @@ local function tooltipOnEnter(self)
 		end
 		local l = tt:SetCell(tt:AddLine(),1,C("sc_header",addon)..stayClassyLocale,tt:GetHeaderFont(),"LEFT",0);
 
-		if not IsInGuild() then
+		tt.lines[l].id = achievements.meta;
+		tt:SetLineScript(l,"OnMouseUp",openAchievement);
+		for i=1, #achievements do
 			tt:AddSeparator(4,0,0,0,0);
-			tt:SetCell(tt:AddLine(),1,C("sc_gray2",ERR_GUILD_PLAYER_NOT_IN_GUILD),nil,"CENTER",0);
-		else
-			tt.lines[l].id = achievements.meta;
+			local requirements,flag,l = "","",tt:AddLine();
+			if data[achievements[i]][aCompleted] then
+				flag = " "..check;
+			end
+			if StayClassyDB.showRequirements and not data[achievements[i]][aCompleted] then
+				requirements = " "
+								..C("sc_gray1","("..LEVEL..CHAT_HEADER_SUFFIX)
+								..C("sc_gray2",data[achievements[i]].criteria[1][cReqQuantity])
+								..C("sc_gray1",", "..REPUTATION..CHAT_HEADER_SUFFIX)
+								..C("sc_gray2",FACTION_STANDING_LABEL6)
+								..C("sc_gray1",")");
+			end
+			tt:SetCell(l,1,icons:format(data[achievements[i]][aIcon]).." "..C("sc_header",data[achievements[i]][aName])..flag..requirements,nil,"LEFT",0);
+			tt.lines[l].id = achievements[i];
 			tt:SetLineScript(l,"OnMouseUp",openAchievement);
-			for i=1, #achievements do
-				tt:AddSeparator(4,0,0,0,0);
-				local requirements,flag,l = "","",tt:AddLine();
-				if data[achievements[i]][aCompleted] then
-					flag = " "..check;
-				end
-				if StayClassyDB.showRequirements and not data[achievements[i]][aCompleted] then
-					requirements = " "
-								 ..C("sc_gray1","("..LEVEL..CHAT_HEADER_SUFFIX)
-								 ..C("sc_gray2",data[achievements[i]].criteria[1][cReqQuantity])
-								 ..C("sc_gray1",", "..REPUTATION..CHAT_HEADER_SUFFIX)
-								 ..C("sc_gray2",FACTION_STANDING_LABEL6)
-								 ..C("sc_gray1",")");
-				end
-				tt:SetCell(l,1,icons:format(data[achievements[i]][aIcon]).." "..C("sc_header",data[achievements[i]][aName])..flag..requirements,nil,"LEFT",0);
-				tt.lines[l].id = achievements[i];
-				tt:SetLineScript(l,"OnMouseUp",openAchievement);
-				if not data[achievements[i]][aCompleted] or StayClassyDB.expandCompleted then
-					tt:AddSeparator();
-					local c,l=columns+1;
-					table.sort(data[achievements[i]].criteria,sortClasses);
-					for I,v in pairs(data[achievements[i]].criteria) do
-						if not v[cCompleted] or StayClassyDB.showCompletedCriteria or (StayClassyDB.expandCompleted and data[achievements[i]][aCompleted]) then
-							if c>columns then c,l=1,tt:AddLine(); end
-							local class = classEN[v[cString]]
-							local flag = v[cCompleted] and check or spacer;
-							local candidates = "";
-							if StayClassyDB.showCandidates then
-								local c,a = 0,GetGuildMembersByClass(class);
-								for _,v in pairs(a)do
-									if StayClassyToonDB[v[1]]==achievementRaces[i] then
-										c=c+1;
-									end
+			if not data[achievements[i]][aCompleted] or StayClassyDB.expandCompleted then
+				tt:AddSeparator();
+				local c,l=columns+1;
+				table.sort(data[achievements[i]].criteria,sortClasses);
+				for I,v in pairs(data[achievements[i]].criteria) do
+					if not v[cCompleted] or StayClassyDB.showCompletedCriteria or (StayClassyDB.expandCompleted and data[achievements[i]][aCompleted]) then
+						if c>columns then c,l=1,tt:AddLine(); end
+						local class = classEN[v[cString]]
+						local flag = v[cCompleted] and check or spacer;
+						local candidates = "";
+						if StayClassyDB.showCandidates then
+							local c,a = 0,GetGuildMembersByClass(class);
+							for _,v in pairs(a)do
+								if StayClassyToonDB[v[1]]==achievementRaces[i] then
+									c=c+1;
 								end
-								candidates = " "..C(c>0 and "sc_gray2" or "sc_gray0",c);
 							end
-							tt:SetCell(l,c,flag.." "..C(class,v[cString])..candidates,nil,"LEFT");
-							tt:SetCellScript(l,c,"OnEnter",tooltip2OnEnter,{race=achievementRaces[i],class=class,reqLevel=data[achievements[i]].criteria[1][cReqQuantity],reqReputation=6,label=data[achievements[i]][aName]});
-							tt:SetCellScript(l,c,"OnLeave",tooltip2OnLeave);
-							c=c+1;
+							candidates = " "..C(c>0 and "sc_gray2" or "sc_gray0",c);
 						end
+						tt:SetCell(l,c,flag.." "..C(class,v[cString])..candidates,nil,"LEFT");
+						tt:SetCellScript(l,c,"OnEnter",tooltip2OnEnter,{race=achievementRaces[i],class=class,reqLevel=data[achievements[i]].criteria[1][cReqQuantity],reqReputation=6,label=data[achievements[i]][aName]});
+						tt:SetCellScript(l,c,"OnLeave",tooltip2OnLeave);
+						c=c+1;
 					end
 				end
 			end
@@ -560,7 +571,9 @@ frame:SetScript("OnEvent",function(self,event,...)
 		end
 		self:UnregisterEvent(event);
 		self:RegisterEvent("PLAYER_ENTERING_WORLD");
-		self:RegisterEvent("NEUTRAL_FACTION_SELECT_RESULT");
+		if WOW_PROJECT_ID==WOW_PROJECT_MAINLINE then
+			self:RegisterEvent("NEUTRAL_FACTION_SELECT_RESULT");
+		end
 		self:RegisterEvent("ACHIEVEMENT_EARNED");
 		self:RegisterEvent("CRITERIA_UPDATE");
 		self:RegisterEvent("PLAYER_GUILD_UPDATE");

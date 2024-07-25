@@ -108,26 +108,30 @@ local function updateGuildMembers()
 	if #guildMembers==num then return end
 	for i=1, num do
 		local name,rank,_,level,_,_,_,_,_,_,class,_,_,_,_,repStanding,guid = GetGuildRosterInfo(i); -- @blizzard: thanks for guid :)
-		local y,m,d,h = GetGuildRosterLastOnline(i);
-		y,m,d,h = y or 0, m or 0, d or 0, h or 0;
-		local off,race = ((((y*12)+m)*30.5+d)*24+h);
-		if not name:find("%-") then
-			name = name.."-"..Realm;
-		end
-		if StayClassyToonDB[name] then
-			race = StayClassyToonDB[name];
-		elseif class=="DEMONHUNTER" then
-			race = faction=="Alliance" and "NIGHTELF" or "BLOODELF";
-			StayClassyToonDB[name] = race;
-		elseif guid then
-			_,_,_,race = GetPlayerInfoByGUID(guid);
-			if race then
-				addRace(name,race)
-			else
-				tinsert(guids,{guid,name});
+		if name then
+			local y,m,d,h = GetGuildRosterLastOnline(i);
+			y,m,d,h = y or 0, m or 0, d or 0, h or 0;
+			local off,race = ((((y*12)+m)*30.5+d)*24+h);
+			if not name:find("%-") then
+				name = name.."-"..Realm;
 			end
+			if StayClassyToonDB[name] then
+				race = StayClassyToonDB[name];
+			elseif class=="DEMONHUNTER" then
+				race = faction=="Alliance" and "NIGHTELF" or "BLOODELF";
+				StayClassyToonDB[name] = race;
+			elseif guid then
+				_,_,_,race = GetPlayerInfoByGUID(guid);
+				if race then
+					addRace(name,race)
+				else
+					tinsert(guids,{guid,name});
+				end
+			end
+			tinsert(tmp,{name,level,class,repStanding});
+		else
+			ns:debugPrint("nil value",i)
 		end
-		tinsert(tmp,{name,level,class,repStanding});
 	end
 	guildMembers = tmp;
 	guildMembersLast=now+5; -- +5sec

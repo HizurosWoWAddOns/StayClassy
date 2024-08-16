@@ -129,8 +129,6 @@ local function updateGuildMembers()
 				end
 			end
 			tinsert(tmp,{name,level,class,repStanding});
-		else
-			ns:debugPrint("nil value",i)
 		end
 	end
 	guildMembers = tmp;

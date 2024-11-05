@@ -1,5 +1,5 @@
-## Interface: 110002
-## Interface-Cata: 40400
+## Interface: 110005
+## Interface-Cata: 40401
 ## Title: Stay Classy
 ## Notes: Stay Classy - guild achievement helper
 ## IconTexture: 464820

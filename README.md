@@ -1,5 +1,5 @@
 # StayClassy (WoW AddOn)
-![Build](https://github.com/HizurosWoWAddOns/StayClassy/actions/workflows/bigwigsmods-packager.yml/badge.svg)
+![Build](https://img.shields.io/github/actions/workflow/status/HizurosWoWAddOns/StayClassy/packager.yml?style=flat-square)
 ![Tag](https://img.shields.io/github/v/tag/HizurosWoWAddOns/StayClassy?style=flat-square)
 ![Downloads](https://img.shields.io/github/downloads/HizurosWoWAddOns/StayClassy/total?style=flat-square)
 ![Downloads](https://img.shields.io/github/downloads/HizurosWoWAddOns/StayClassy/latest/total?style=flat-square)

@@ -44,6 +44,11 @@ LC.colorset({
 	["sc_gray2"]	= "D0D0E0",
 });
 
+local supporter = {
+	-- {<color>,<name>}, <localizations>, <donations>, <otherSupportTypes>, <special text>,
+	{"curseforge","ZamestoTV"},{"ruRU"},false,false,false,
+}
+
 local classIndexByName = {};
 for i,v in ipairs(LFG_LIST_GROUP_DATA_CLASS_ORDER)do
 	classIndexByName[v]=i;
@@ -484,18 +489,13 @@ local options = {
 				}
 			}
 		},
-		credits = {
-			type = "group", order = 200,
-			name = L["Credits"],
-			args = {}
-		},
 	}
 };
 
 local function RegisterOptionPanel()
 	LibStub("AceConfig-3.0"):RegisterOptionsTable(addon, options);
 	LibStub("AceConfigDialog-3.0"):AddToBlizOptions(addon);
-	LibStub("HizurosSharedTools").AddCredit(addon,options.args.credits.args);
+	LibStub("HizurosSharedTools").AddCredit(addon,options.args,{inline=true,supporter=supporter});
 end
 
 
